@@ -1,0 +1,146 @@
+"""
+Car body on a flat road: tractive force in at the flange, resisted by aerodynamic drag and rolling
+resistance.
+"""
+component Body
+  "Tractive force from the driveline"
+  flange = Flange() {^flange}
+  mass = TranslationalComponents.Components.Mass(m = m) {^mass}
+  # A negative nominal force makes the source a load; ForceDirection = false gives the v*|v| form,
+  # so drag opposes motion in both directions.
+  drag = TranslationalComponents.Sources.QuadraticSpeedDependentForce(ForceDirection = false, v_nominal = v_nominal, f_nominal = -0.5 * rho * CdA * v_nominal ^ 2) {^drag}
+  rolling = TranslationalComponents.Components.RollingResistance(fWeight = m * g) {^rolling}
+  cr_const = BlockComponents.Sources.Constant(k = f_r) {^cr_const}
+  "Flat road: tan(alpha) = 0"
+  incl_const = BlockComponents.Sources.Constant(k = 0) {^incl_const}
+  ground = TranslationalComponents.Components.Fixed() {^ground}
+  "Vehicle mass"
+  parameter m::Dyad.Mass = 1400
+  "Aerodynamic drag area, Cd * A"
+  parameter CdA::Area = 0.63
+  "Air density"
+  parameter rho::Density = 1.2
+  "Rolling resistance coefficient"
+  parameter f_r::Real = 0.012
+  "Gravitational acceleration"
+  parameter g::Acceleration = 9.80665
+  "Speed at which the drag force is specified"
+  parameter v_nominal::Velocity = 30
+relations
+  connect(flange, mass.flange_a) {^id1}
+  connect(drag.flange, mass.flange_a) {^id2}
+  connect(rolling.flange, mass.flange_a) {^id3}
+  connect(drag.support, ground.flange) {^id4}
+  connect(rolling.support, ground.flange) {^id5}
+  connect(cr_const.y, rolling.cr) {^id6}
+  connect(incl_const.y, rolling.inclination) {^id7}
+metadata {
+  "Dyad": {
+    "icons": {"default": "dyad://MyCar/Body.svg"},
+    "labels": [{"label": "$(instance)", "x": 500, "y": 1100, "rot": 0}]
+  },
+  "_links": {
+    "flange": {
+      "Dyad": {"placement": {"diagram": {"x1": 950, "x2": 1050, "y1": 450, "y2": 550}}}
+    },
+    "mass": {
+      "Dyad": {"placement": {"diagram": {"x1": 660, "x2": 760, "y1": 250, "y2": 350}}}
+    },
+    "drag": {
+      "Dyad": {"placement": {"diagram": {"x1": 550, "x2": 450, "y1": 550, "y2": 650}}}
+    },
+    "rolling": {
+      "Dyad": {"placement": {"diagram": {"x1": 150, "x2": 250, "y1": 250, "y2": 350}}}
+    },
+    "cr_const": {"Dyad": {"placement": {"diagram": {"x1": 20, "x2": 120, "y1": 20, "y2": 120}}}},
+    "incl_const": {
+      "Dyad": {"placement": {"diagram": {"x1": -20, "x2": 80, "y1": 450, "y2": 550}}}
+    },
+    "ground": {
+      "Dyad": {"placement": {"diagram": {"x1": 450, "x2": 550, "y1": 990, "y2": 1090}}}
+    },
+    "id1": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 410, "y": 500}, {"x": 410, "y": 300}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id2": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 410, "y": 600}, {"x": 410, "y": 300}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id3": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [], "E": -1}, {"S": -1, "M": [], "E": 2}],
+        "junctions": [{"x": 390, "y": 300}],
+        "path": {}
+      }
+    },
+    "id4": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id5": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 200, "y": 720}], "E": -1}, {"S": -1, "M": [], "E": 2}],
+        "junctions": [{"x": 500, "y": 720}],
+        "path": {}
+      }
+    },
+    "id6": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 140, "y": 70}, {"x": 140, "y": 270}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id7": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 115, "y": 500}, {"x": 115, "y": 325}], "E": 2}],
+        "path": {}
+      }
+    }
+  }
+}
+end
+
+test component TestBody
+  "Constant tractive force from rest"
+  tractive = TranslationalComponents.Sources.ConstantForce(f_constant = 500) {^tractive}
+  body = Body() {^body}
+  fixed = TranslationalComponents.Components.Fixed() {^fixed}
+relations
+  connect(tractive.flange, body.flange) {^id1}
+  connect(tractive.support, fixed.flange) {^id2}
+  initial body.mass.s = 0
+  initial body.mass.v = 0
+metadata {
+  "Dyad": {
+    "tests": {
+      "case1": {
+        "stop": 800,
+        "atol": {"body.mass.a": 0.001, "body.mass.v": 0.001},
+        "expect": {
+          "initial": {"body.mass.a": 0.35714285714285715, "body.mass.v": 0},
+          "final": {"body.mass.a": 0, "body.mass.v": 29.780869893947216},
+          "signals": ["body.mass.v"]
+        }
+      }
+    }
+  },
+  "_links": {
+    "tractive": {
+      "Dyad": {"placement": {"diagram": {"x1": 150, "x2": 250, "y1": 450, "y2": 550}}}
+    },
+    "body": {"Dyad": {"placement": {"diagram": {"x1": 450, "x2": 550, "y1": 450, "y2": 550}}}},
+    "fixed": {"Dyad": {"placement": {"diagram": {"x1": 150, "x2": 250, "y1": 700, "y2": 800}}}},
+    "id1": {
+      "Dyad": {
+        "edges": [
+          {"S": 1, "M": [{"x": 300, "y": 500}, {"x": 300, "y": 620}, {"x": 600, "y": 620}, {"x": 600, "y": 500}], "E": 2}
+        ],
+        "path": {}
+      }
+    },
+    "id2": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}}
+  }
+}
+end

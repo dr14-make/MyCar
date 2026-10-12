@@ -1,40 +1,37 @@
 # MyCar
-  
-## Getting Started
-  
-This library was created with the Dyad Studio VS Code extension.  Your Dyad
-models should be placed in the `dyad` directory and the files should be
-given the `.dyad` extension.  Several such files have already been placed
-in there to get you started.  The Dyad compiler will compile the Dyad models
-into Julia code and place it in the `generated` folder.  Do not edit the
-files in that directory or remove/rename that directory.
 
-A complete tutorial on using Dyad Studio can be found [here](#).  But you
-can run the provided example models by doing the following:
+The car from the Vehicle Systems & Components hands-on session, finished: every component
+from hands-on steps 01–10, with its tests. Lecture 1 starts from here and puts a cruise
+controller in front of `Car`.
 
-1. Run `Julia: Start REPL` from the command palette.
+## Get your own copy
 
-2. Type `]`.  This will take you to the package manager prompt.
+1. **Use this template → Create a new repository**, name it `MyCar`, owner: you.
+2. In VS Code: **Git: Clone** your new repository and open the folder.
+3. Dyad Studio runs `Pkg.instantiate()` by itself. The first time it downloads and
+   precompiles the libraries — minutes, not seconds.
+4. Status bar, bottom left: `main` → **Create new branch…** → `lecture-01`. The lecture goes
+   on that branch.
 
-3. At the `pkg>` prompt, type `instantiate` (this downloads all the Julia libraries
-   you will need, and the very first time you do it it might take a while).
+Keep the name `MyCar`: the lecture's plot commands start with `using MyCar, Plots; plotly()`.
 
-4. From the same `pkg>` prompt, type `test`.  This will test to make sure the models
-   are working as expected.  It may also take some time but you should eventually
-   see a result that indicates 2 of 2 tests passed.
+## What is in it
 
-5. Use the `Backspace`/`Delete` key to return to the normal Julia REPL, it should
-   look like this: `julia>`.
+| Component | Hands-on step | What it is |
+| --- | --- | --- |
+| `Engine`, bench `EngineStep` | 02 | torque command in, shaft torque out: delay, lag, 150 N·m ceiling |
+| `Driveline` | 03 | gear and rolling wheel |
+| `Body` | 04 | mass, air drag, rolling resistance |
+| `Car`, bench `CarFullThrottle` | 05 | torque command in, speed in km/h out — 246 km/h flat out |
+| `WheeledDriveline`, `WheeledCar` | 06 | the same car with wheel inertia |
+| `GradeForce`, `GradeBody` | 07 | the body on a hill, with a `grade` input |
+| `TireFrictionCurve` | 08 | grip against slip |
+| `SlipWheel1D` | 09 | a wheel that can spin |
+| `SlipCar`, bench `SlipCarStandingStart` | 10 | wheelspin on ice |
 
-6. Type `using MyCar`.  This will load your model library.
+Each component has a test case; run them all with `]` → `test` in the Julia REPL.
 
-7. Type `World()` to run a simulation of the `Hello` model.  The first time you run it,
-   this might take a few seconds, but each successive time you run it, it should be very fast.
+## Course pages
 
-8. To see simulation results type `using Plots` (and answer `y` if asked if you want
-   to add it as a dependency).
-
-9. To plot results of the `World` simulation, simply type `plot(World())`.
-
-10. You can plot variations on that simulation using keyword arguments.  For example,
-    try `plot(World(stop=20, k=4))`.
+- Hands-on guide: <https://dr14-make.github.io/16ESPD/handson/lecture-01/>
+- Lecture 1 build guide: <https://dr14-make.github.io/16ESPD/lecture/lecture-01/>

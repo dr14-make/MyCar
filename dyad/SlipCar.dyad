@@ -1,0 +1,255 @@
+"""
+The car with a slipping wheel and a road gradient. Body speed and wheel surface speed are both
+reported in km/h, so wheelspin shows as the gap between them.
+"""
+component SlipCar
+  "Commanded engine torque"
+  tau_cmd = RealInput() {^tau_cmd}
+  "Road gradient, tan(alpha)"
+  grade = RealInput() {^grade}
+  "Road-friction multiplier"
+  mu_scale = RealInput() {^mu_scale}
+  "Vehicle speed in km/h"
+  v_kmh = RealOutput() {^v_kmh}
+  "Wheel surface speed, omega * radius, in km/h"
+  wheel_kmh = RealOutput() {^wheel_kmh}
+  engine = Engine(theta_e = theta_e, T_max = T_max) {^engine}
+  gear = RotationalComponents.Components.IdealGear(ratio = i) {^gear}
+  wheel_inertia = RotationalComponents.Components.Inertia(J = J_w) {^wheel_inertia}
+  wheel = SlipWheel1D(radius = r, F_z = m * g / 2) {^wheel}
+  body = GradeBody(m = m, CdA = CdA, g = g) {^body}
+  vsensor = TranslationalComponents.Sensors.VelocitySensor() {^vsensor}
+  to_kmh = BlockComponents.Math.Gain(k = 3.6) {^to_kmh}
+  wsensor = RotationalComponents.Sensors.VelocitySensor() {^wsensor}
+  wheel_to_kmh = BlockComponents.Math.Gain(k = r * 3.6) {^wheel_to_kmh}
+  "Engine mounts and gearbox housing"
+  rot_ground = RotationalComponents.Components.Fixed() {^rot_ground}
+  "Injection-to-torque transport delay"
+  structural parameter theta_e::Time = 0.3
+  "Peak deliverable torque"
+  parameter T_max::Torque = 150
+
+  "Gear ratio"
+  parameter i::Real = 4.0
+  "Road wheel and tire inertia"
+  parameter J_w::MomentOfInertia = 1.0
+  "Wheel rolling radius, shared by the tire and the wheel-speed gain"
+  parameter r::Length = 0.31
+  "Vehicle mass; the driven axle carries half of it"
+  parameter m::Dyad.Mass = 1400
+  "Aerodynamic drag area, Cd * A"
+  parameter CdA::Area = 0.63
+  "Gravitational acceleration"
+  parameter g::Acceleration = 9.80665
+relations
+  connect(tau_cmd, engine.tau_cmd) {^id1}
+  connect(engine.spline, gear.spline_a) {^id2}
+  connect(gear.spline_b, wheel_inertia.spline_a) {^id3}
+  connect(wheel_inertia.spline_b, wheel.spline) {^id4}
+  connect(engine.support, rot_ground.spline) {^id5}
+  connect(gear.support, rot_ground.spline) {^id6}
+  connect(wheel.flange, body.flange) {^id7}
+  connect(grade, body.grade) {^id8}
+  connect(mu_scale, wheel.mu_scale) {^id9}
+  connect(vsensor.flange, wheel.flange) {^id10}
+  connect(vsensor.v, to_kmh.u) {^id11}
+  connect(to_kmh.y, v_kmh) {^id12}
+  connect(wsensor.spline, wheel.spline) {^id13}
+  connect(wsensor.w, wheel_to_kmh.u) {^id14}
+  connect(wheel_to_kmh.y, wheel_kmh) {^id15}
+metadata {
+  "Dyad": {
+    "icons": {"default": "dyad://MyCar/SlipCar.svg"},
+    "labels": [{"label": "$(instance)", "x": 500, "y": 1100, "rot": 0}]
+  },
+  "_links": {
+    "tau_cmd": {
+      "Dyad": {
+        "placement": {
+          "icon": {"x1": -60, "x2": 40, "y1": 800, "y2": 900},
+          "diagram": {"x1": -60, "x2": 40, "y1": 800, "y2": 900}
+        }
+      }
+    },
+    "grade": {
+      "Dyad": {
+        "placement": {
+          "icon": {"x1": -60, "x2": 40, "y1": 20, "y2": 120},
+          "diagram": {"x1": -60, "x2": 40, "y1": 20, "y2": 120}
+        }
+      }
+    },
+    "mu_scale": {
+      "Dyad": {
+        "placement": {
+          "icon": {"x1": -60, "x2": 40, "y1": 170, "y2": 270},
+          "diagram": {"x1": -60, "x2": 40, "y1": 170, "y2": 270}
+        }
+      }
+    },
+    "v_kmh": {
+      "Dyad": {
+        "placement": {
+          "icon": {"x1": 960, "x2": 1060, "y1": 600, "y2": 700},
+          "diagram": {"x1": 960, "x2": 1060, "y1": 600, "y2": 700}
+        }
+      }
+    },
+    "wheel_kmh": {
+      "Dyad": {
+        "placement": {
+          "icon": {"x1": 960, "x2": 1060, "y1": 780, "y2": 880},
+          "diagram": {"x1": 960, "x2": 1060, "y1": 780, "y2": 880}
+        }
+      }
+    },
+    "engine": {"Dyad": {"placement": {"diagram": {"x1": 70, "x2": 170, "y1": 430, "y2": 530}}}},
+    "gear": {"Dyad": {"placement": {"diagram": {"x1": 230, "x2": 330, "y1": 430, "y2": 530}}}},
+    "wheel_inertia": {
+      "Dyad": {"placement": {"diagram": {"x1": 390, "x2": 490, "y1": 430, "y2": 530}}}
+    },
+    "wheel": {"Dyad": {"placement": {"diagram": {"x1": 550, "x2": 650, "y1": 430, "y2": 530}}}},
+    "body": {"Dyad": {"placement": {"diagram": {"x1": 760, "x2": 860, "y1": 310, "y2": 410}}}},
+    "vsensor": {"Dyad": {"placement": {"diagram": {"x1": 700, "x2": 800, "y1": 600, "y2": 700}}}},
+    "to_kmh": {"Dyad": {"placement": {"diagram": {"x1": 830, "x2": 930, "y1": 600, "y2": 700}}}},
+    "wsensor": {"Dyad": {"placement": {"diagram": {"x1": 390, "x2": 490, "y1": 780, "y2": 880}}}},
+    "wheel_to_kmh": {
+      "Dyad": {"placement": {"diagram": {"x1": 550, "x2": 650, "y1": 780, "y2": 880}}}
+    },
+    "rot_ground": {"Dyad": {"placement": {"diagram": {"x1": 70, "x2": 170, "y1": 650, "y2": 750}}}},
+    "id1": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 35, "y": 850}, {"x": 35, "y": 480}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id2": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id3": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id4": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id5": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id6": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 280, "y": 600}, {"x": 120, "y": 600}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id7": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 890, "y": 480}, {"x": 890, "y": 360}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id8": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 720, "y": 70}, {"x": 720, "y": 360}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id9": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 601, "y": 220}], "E": 2}], "path": {}}},
+    "id10": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 675, "y": 650}, {"x": 675, "y": 480}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id11": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id12": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id13": {
+      "Dyad": {
+        "edges": [
+          {
+            "S": 1,
+            "M": [
+              {"x": 360, "y": 830},
+              {"x": 360, "y": 570},
+              {"x": 520, "y": 570},
+              {"x": 520, "y": 480}
+            ],
+            "E": 2
+          }
+        ],
+        "path": {}
+      }
+    },
+    "id15": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id14": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}}
+  }
+}
+end
+
+"""Full throttle from rest on a slippery flat road: the wheel spins up, the car barely moves."""
+component SlipCarStandingStart
+  "Full throttle"
+  cmd = BlockComponents.Sources.Constant(k = 150) {^cmd}
+  "Flat road"
+  road = BlockComponents.Sources.Constant(k = 0) {^road}
+  "Slippery road; 1.0 is dry"
+  friction = BlockComponents.Sources.Constant(k = 0.2) {^friction}
+  car = SlipCar() {^car}
+relations
+  connect(cmd.y, car.tau_cmd) {^id1}
+  connect(road.y, car.grade) {^id2}
+  connect(friction.y, car.mu_scale) {^id3}
+  initial car.body.mass.s = 0
+  initial car.body.mass.v = 0
+  initial car.engine.lag.x = 0
+  initial car.wheel_inertia.phi = 0
+  initial car.wheel_inertia.w = 0
+metadata {
+  "Dyad": {
+    "tests": {
+      "low_friction": {
+        "stop": 5,
+        "params": {"friction.k": 0.2},
+        "atol": {"car.v_kmh": 0.1, "car.wheel_kmh": 0.5},
+        "expect": {
+          "initial": {"car.v_kmh": 0, "car.wheel_kmh": 0},
+          "final": {"car.v_kmh": 10.1163, "car.wheel_kmh": 1501.063},
+          "signals": ["car.v_kmh", "car.wheel_kmh"]
+        }
+      },
+      "dry_road": {
+        "stop": 5,
+        "params": {"friction.k": 1.0},
+        "atol": {"car.v_kmh": 0.1, "car.wheel_kmh": 0.5},
+        "expect": {
+          "initial": {"car.v_kmh": 0, "car.wheel_kmh": 0},
+          "final": {"car.v_kmh": 21.0761, "car.wheel_kmh": 21.2353},
+          "signals": ["car.v_kmh", "car.wheel_kmh"]
+        }
+      }
+    }
+  },
+  "_links": {
+    "road": {"Dyad": {"placement": {"diagram": {"x1": 150, "x2": 250, "y1": 250, "y2": 350}}}},
+    "friction": {
+      "Dyad": {"placement": {"diagram": {"x1": 150, "x2": 250, "y1": 450, "y2": 550}}}
+    },
+    "cmd": {"Dyad": {"placement": {"diagram": {"x1": 150, "x2": 250, "y1": 650, "y2": 750}}}},
+    "car": {"Dyad": {"placement": {"diagram": {"x1": 450, "x2": 550, "y1": 450, "y2": 550}}}},
+    "id1": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 400, "y": 700}, {"x": 400, "y": 535}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id2": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 300, "y": 300}, {"x": 300, "y": 457}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id3": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 350, "y": 500}, {"x": 350, "y": 472}], "E": 2}],
+        "path": {}
+      }
+    }
+  }
+}
+end
+
+analysis SlipCarStandingStartTransient
+  extends TransientAnalysis(stop = 5)
+  model = SlipCarStandingStart()
+end

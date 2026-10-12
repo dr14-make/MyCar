@@ -1,0 +1,126 @@
+"""Gearbox and rolling wheel: engine shaft in, tractive force on the body out."""
+component Driveline
+  "From the engine"
+  spline = Spline() {^spline}
+  "Gearbox housing"
+  support_r = Spline() {^support_r}
+  "To the body"
+  flange = Flange() {^flange}
+  "Road"
+  support_t = Flange() {^support_t}
+  gear = RotationalComponents.Components.IdealGear(ratio = i) {^gear}
+  wheel = RotationalComponents.Components.IdealRollingWheel(radius = r) {^wheel}
+  "Gear ratio"
+  parameter i::Real = 4.0
+  "Wheel rolling radius"
+  parameter r::Length = 0.31
+relations
+  connect(spline, gear.spline_a) {^id1}
+  connect(gear.spline_b, wheel.spline) {^id2}
+  connect(wheel.flange, flange) {^id3}
+  connect(gear.support, support_r) {^id4}
+  connect(wheel.support_r, support_r) {^id5}
+  connect(wheel.support_t, support_t) {^id6}
+metadata {
+  "Dyad": {
+    "icons": {"default": "dyad://MyCar/Driveline.svg"},
+    "labels": [{"label": "$(instance)", "x": 500, "y": 1100, "rot": 0}]
+  },
+  "_links": {
+    "spline": {
+      "Dyad": {
+        "placement": {
+          "icon": {"x1": -40, "x2": 60, "y1": 450, "y2": 550},
+          "diagram": {"x1": -40, "x2": 60, "y1": 450, "y2": 550}
+        }
+      }
+    },
+    "support_r": {
+      "Dyad": {
+        "placement": {
+          "icon": {"x1": 330, "x2": 430, "y1": 950, "y2": 1050},
+          "diagram": {"x1": 330, "x2": 430, "y1": 950, "y2": 1050}
+        }
+      }
+    },
+    "flange": {
+      "Dyad": {
+        "placement": {
+          "icon": {"x1": 950, "x2": 1050, "y1": 450, "y2": 550},
+          "diagram": {"x1": 950, "x2": 1050, "y1": 450, "y2": 550}
+        }
+      }
+    },
+    "support_t": {
+      "Dyad": {
+        "placement": {
+          "icon": {"x1": 560, "x2": 660, "y1": 950, "y2": 1050},
+          "diagram": {"x1": 555, "x2": 655, "y1": 950, "y2": 1050}
+        }
+      }
+    },
+    "gear": {"Dyad": {"placement": {"diagram": {"x1": 330, "x2": 430, "y1": 450, "y2": 550}}}},
+    "wheel": {"Dyad": {"placement": {"diagram": {"x1": 520, "x2": 620, "y1": 450, "y2": 550}}}},
+    "id1": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id2": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id3": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id4": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id5": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 535, "y": 590}, {"x": 380, "y": 590}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id6": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}}
+  }
+}
+end
+
+test component TestDriveline
+  "Constant engine-side torque"
+  torque = RotationalComponents.Sources.ConstantTorque(tau_constant = 100) {^torque}
+  driveline = Driveline() {^driveline}
+  housing = RotationalComponents.Components.Fixed() {^housing}
+  mass = TranslationalComponents.Components.Mass(m = 1400) {^mass}
+  road = TranslationalComponents.Components.Fixed() {^road}
+relations
+  connect(torque.spline, driveline.spline) {^id1}
+  connect(torque.support, housing.spline) {^id2}
+  connect(driveline.support_r, housing.spline) {^id3}
+  connect(driveline.flange, mass.flange_a) {^id4}
+  connect(driveline.support_t, road.flange) {^id5}
+  initial mass.s = 0
+  initial mass.v = 0
+metadata {
+  "Dyad": {
+    "tests": {
+      "case1": {
+        "stop": 10,
+        "atol": {"mass.a": 0.0001, "mass.v": 0.001},
+        "expect": {
+          "initial": {"mass.a": 0.9216589862, "mass.v": 0},
+          "final": {"mass.a": 0.9216589862, "mass.v": 9.216589862},
+          "signals": ["mass.v"]
+        }
+      }
+    }
+  },
+  "_links": {
+    "torque": {"Dyad": {"placement": {"diagram": {"x1": 100, "x2": 200, "y1": 450, "y2": 550}}}},
+    "driveline": {"Dyad": {"placement": {"diagram": {"x1": 350, "x2": 450, "y1": 450, "y2": 550}}}},
+    "housing": {"Dyad": {"placement": {"diagram": {"x1": 100, "x2": 200, "y1": 700, "y2": 800}}}},
+    "mass": {"Dyad": {"placement": {"diagram": {"x1": 600, "x2": 700, "y1": 450, "y2": 550}}}},
+    "road": {"Dyad": {"placement": {"diagram": {"x1": 361, "x2": 461, "y1": 700, "y2": 800}}}},
+    "id1": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id2": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id3": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 388, "y": 650}, {"x": 150, "y": 650}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id4": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id5": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}}
+  }
+}
+end

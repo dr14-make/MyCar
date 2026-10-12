@@ -1,0 +1,145 @@
+"""
+The car of step 5 with a wheel that has inertia.
+"""
+component WheeledCar
+  "Commanded engine torque"
+  tau_cmd = RealInput() {^tau_cmd}
+  "Vehicle speed in km/h"
+  v_kmh = RealOutput() {^v_kmh}
+  engine = Engine(theta_e = theta_e, T_max = T_max) {^engine}
+  driveline = WheeledDriveline(J_w = J_w) {^driveline}
+  body = Body(m = m, CdA = CdA) {^body}
+  vsensor = TranslationalComponents.Sensors.VelocitySensor() {^vsensor}
+  to_kmh = BlockComponents.Math.Gain(k = 3.6) {^to_kmh}
+  "Engine mounts and gearbox housing"
+  rot_ground = RotationalComponents.Components.Fixed() {^rot_ground}
+  "Road under the wheel"
+  trans_ground = TranslationalComponents.Components.Fixed() {^trans_ground}
+  "Injection-to-torque transport delay"
+  structural parameter theta_e::Time = 0.3
+  "Peak deliverable torque"
+  parameter T_max::Torque = 150
+  "Vehicle mass"
+  parameter m::Dyad.Mass = 1400
+  "Aerodynamic drag area, Cd * A"
+  parameter CdA::Area = 0.63
+  "Road wheel and tire inertia"
+  parameter J_w::MomentOfInertia = 1.0
+
+relations
+  connect(tau_cmd, engine.tau_cmd) {^id1}
+  connect(engine.spline, driveline.spline) {^id2}
+  connect(engine.support, rot_ground.spline) {^id3}
+  connect(driveline.support_r, rot_ground.spline) {^id4}
+  connect(driveline.flange, body.flange) {^id5}
+  connect(driveline.support_t, trans_ground.flange) {^id6}
+  connect(vsensor.flange, body.flange) {^id7}
+  connect(vsensor.v, to_kmh.u) {^id8}
+  connect(to_kmh.y, v_kmh) {^id9}
+metadata {
+  "Dyad": {
+    "icons": {"default": "dyad://MyCar/WheeledCar.svg"},
+    "labels": [{"label": "$(instance)", "x": 500, "y": 1100, "rot": 0}]
+  },
+  "_links": {
+    "tau_cmd": {
+      "Dyad": {"placement": {"diagram": {"x1": -50, "x2": 50, "y1": 450, "y2": 550}}}
+    },
+    "v_kmh": {
+      "Dyad": {"placement": {"diagram": {"x1": 950, "x2": 1050, "y1": 450, "y2": 550}}}
+    },
+    "engine": {
+      "Dyad": {"placement": {"diagram": {"x1": 120, "x2": 220, "y1": 450, "y2": 550}}}
+    },
+    "driveline": {
+      "Dyad": {"placement": {"diagram": {"x1": 320, "x2": 420, "y1": 450, "y2": 550}}}
+    },
+    "body": {"Dyad": {"placement": {"diagram": {"x1": 560, "x2": 660, "y1": 450, "y2": 550}}}},
+    "vsensor": {
+      "Dyad": {"placement": {"diagram": {"x1": 560, "x2": 660, "y1": 250, "y2": 350}}}
+    },
+    "to_kmh": {
+      "Dyad": {"placement": {"diagram": {"x1": 760, "x2": 860, "y1": 250, "y2": 350}}}
+    },
+    "rot_ground": {
+      "Dyad": {"placement": {"diagram": {"x1": 120, "x2": 220, "y1": 700, "y2": 800}}}
+    },
+    "trans_ground": {
+      "Dyad": {"placement": {"diagram": {"x1": 331, "x2": 431, "y1": 800, "y2": 900}}}
+    },
+    "id1": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id2": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id3": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id4": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 358, "y": 650}, {"x": 170, "y": 650}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id5": {
+      "Dyad": {
+        "edges": [
+          {"S": 1, "M": [{"x": 480, "y": 500}, {"x": 480, "y": 400}, {"x": 700, "y": 400}, {"x": 700, "y": 500}], "E": 2}
+        ],
+        "path": {}
+      }
+    },
+    "id6": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id7": {
+      "Dyad": {
+        "edges": [
+          {"S": 1, "M": [{"x": 480, "y": 300}, {"x": 480, "y": 400}], "E": -1},
+          {"S": -1, "M": [{"x": 700, "y": 400}, {"x": 700, "y": 500}], "E": 2}
+        ],
+        "junctions": [{"x": 480, "y": 400}],
+        "path": {}
+      }
+    },
+    "id8": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id9": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 900, "y": 300}, {"x": 900, "y": 500}], "E": 2}],
+        "path": {}
+      }
+    }
+  }
+}
+end
+
+"""Full throttle from rest on a flat road, with wheel inertia."""
+component WheeledCarFullThrottle
+  "Full throttle: the engine's 150 N·m ceiling"
+  cmd = BlockComponents.Sources.Constant(k = 150) {^cmd}
+  car = WheeledCar() {^car}
+relations
+  connect(cmd.y, car.tau_cmd) {^id1}
+  initial car.body.mass.s = 0
+  initial car.body.mass.v = 0
+  initial car.engine.lag.x = 0
+  initial car.driveline.inertia.phi = 0
+metadata {
+  "Dyad": {
+    "tests": {
+      "case1": {
+        "stop": 300,
+        "atol": {"car.v_kmh": 0.05, "car.engine.limiter.y": 0.001},
+        "expect": {
+          "initial": {"car.v_kmh": 0},
+          "final": {"car.v_kmh": 246.388, "car.engine.limiter.y": 150},
+          "signals": ["car.v_kmh"]
+        }
+      }
+    }
+  },
+  "_links": {
+    "cmd": {"Dyad": {"placement": {"diagram": {"x1": 150, "x2": 250, "y1": 450, "y2": 550}}}},
+    "car": {"Dyad": {"placement": {"diagram": {"x1": 450, "x2": 550, "y1": 450, "y2": 550}}}},
+    "id1": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}}
+  }
+}
+end
+
+analysis WheeledCarFullThrottleTransient
+  extends TransientAnalysis(stop = 300)
+  model = WheeledCarFullThrottle()
+end

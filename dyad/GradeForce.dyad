@@ -1,0 +1,68 @@
+"""
+The along-slope pull of gravity on the car, from a road-gradient signal.
+
+`grade` is tan(alpha), the convention `RollingResistance` uses for its `inclination` input, so
+one signal can drive both.
+"""
+component GradeForce
+  extends TranslationalComponents.Interfaces.PartialForce
+  "Road gradient, tan(alpha)"
+  grade = RealInput() {^grade}
+  "Vehicle mass"
+  parameter m::Dyad.Mass = 1400
+  "Gravitational acceleration"
+  parameter g::Acceleration = 9.80665
+relations
+  # A force source acts on the body with -f, so a climb (positive grade) needs positive f to
+  # hold the car back.
+  f = m * g * sin(atan(grade))
+metadata {
+  "Dyad": {
+    "icons": {"default": "dyad://MyCar/GradeForce.svg"},
+    "labels": [{"label": "$(instance)", "x": 500, "y": 1100, "rot": 0}]
+  },
+  "_links": {
+    "grade": {
+      "Dyad": {"placement": {"diagram": {"x1": -40, "x2": 60, "y1": 450, "y2": 550}}}
+    }
+  }
+}
+end
+
+test component TestGradeForce
+  "Flat road, then a 10 % climb from 1 s"
+  grade = BlockComponents.Sources.Step(height = 0.10, offset = 0, start_time = 1) {^grade}
+  gf = GradeForce() {^gf}
+  mass = TranslationalComponents.Components.Mass(m = 1400) {^mass}
+  fixed = TranslationalComponents.Components.Fixed() {^fixed}
+relations
+  connect(grade.y, gf.grade) {^id1}
+  connect(gf.flange, mass.flange_a) {^id2}
+  connect(gf.support, fixed.flange) {^id3}
+  initial mass.s = 0
+  initial mass.v = 0
+metadata {
+  "Dyad": {
+    "tests": {
+      "case1": {
+        "stop": 5,
+        "atol": {"gf.f": 0.01, "mass.a": 0.0001},
+        "expect": {
+          "initial": {"gf.f": 0, "mass.a": 0},
+          "final": {"gf.f": 1366.1174045921907, "mass.a": -0.9757981461372791},
+          "signals": ["gf.f", "mass.v"]
+        }
+      }
+    }
+  },
+  "_links": {
+    "grade": {"Dyad": {"placement": {"diagram": {"x1": 100, "x2": 200, "y1": 450, "y2": 550}}}},
+    "gf": {"Dyad": {"placement": {"diagram": {"x1": 350, "x2": 450, "y1": 450, "y2": 550}}}},
+    "mass": {"Dyad": {"placement": {"diagram": {"x1": 600, "x2": 700, "y1": 450, "y2": 550}}}},
+    "fixed": {"Dyad": {"placement": {"diagram": {"x1": 350, "x2": 450, "y1": 700, "y2": 800}}}},
+    "id1": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id2": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id3": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}}
+  }
+}
+end

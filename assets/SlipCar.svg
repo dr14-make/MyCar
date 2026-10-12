@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <path fill="#fff" d="M4 4h992v992H4z"/>
+  <path fill="#8f8f8f" d="M992 8v984H8V8zm8-8H0v1000h1000z"/>
+  <g fill="none" stroke="#000" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+
+    <g transform="translate(0 40)"><path fill="#e4e7f2" d="M140 610 V510 Q145 455 215 445 L330 432 L415 340 Q432 322 460 322 L640 322 Q668 322 688 342 L780 432 L815 438 Q860 450 860 510 V610 Z"/><path d="M352 432 L432 352 H540 V432 Z M572 432 V352 H655 L730 432 Z" fill="#fff" stroke-width="14"/><circle cx="300" cy="620" r="82" fill="#fff"/><circle cx="300" cy="620" r="24" fill="#000"/><circle cx="700" cy="620" r="82" fill="#fff"/><circle cx="700" cy="620" r="24" fill="#000"/><path d="M190 560 A118 118 0 0 1 395 545" stroke="#5757db" stroke-width="17"/><path d="M400 560 L408 505 L361 520Z" fill="#5757db" stroke="#5757db" stroke-width="6"/></g>
+    <path d="M100 742 H900"/>
+    <g stroke="#5757db" stroke-width="14"><path d="M110 722 H200 M140 692 H210"/></g>
+    <path d="M0 70 H90 M0 220 H90 M0 850 H40" stroke="#5757db"/>
+    <path d="M900 650 H1000 M900 830 H1000" stroke="#5757db"/>
+  </g>
+</svg>

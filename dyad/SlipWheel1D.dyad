@@ -1,0 +1,133 @@
+"""
+A road wheel whose tire grips through slip: the shaft and the body move at different speeds, and
+the friction curve turns the difference into traction.
+
+`F_z` is the load on the one driven axle, about half the car's weight. `mu_scale` scales the
+curve for the road: 1 on a dry road, 0.2 on a slippery one.
+"""
+component SlipWheel1D
+  "Wheel shaft"
+  spline = Spline() {^spline}
+  "Contact with the body"
+  flange = Flange() {^flange}
+  "Road-friction multiplier"
+  mu_scale = RealInput() {^mu_scale}
+  curve = TireFrictionCurve() {^curve}
+  "Wheel rolling radius"
+  parameter radius::Length = 0.31
+  "Normal load on the driven axle"
+  parameter F_z::Force = 6864.655
+  "Speed below which slip is measured against v_eps instead of v"
+  parameter v_eps::Velocity = 0.5
+  "Wheel angular speed"
+  variable omega::AngularVelocity
+  "Vehicle speed"
+  variable v::Velocity
+  "Longitudinal slip ratio"
+  variable kappa::Real
+  "Friction coefficient after road scaling"
+  variable mu::Real
+  "Longitudinal tire force"
+  variable F_x::Force
+relations
+  omega = der(spline.phi)
+  v = der(flange.s)
+  # At standstill v = 0 and the slip ratio is undefined; the floor keeps it finite.
+  kappa = (omega * radius - v) / max(abs(v), v_eps)
+  curve.kappa = kappa
+  mu = mu_scale * curve.mu
+  F_x = mu * F_z
+  # Flow is positive into the component: the tire pushes the body forward with F_x, so the
+  # flange reports -F_x, and the shaft feels the matching reaction torque.
+  flange.f = -F_x
+  0 = spline.tau + radius * flange.f
+metadata {
+  "Dyad": {
+    "icons": {"default": "dyad://MyCar/SlipWheel1D.svg"},
+    "labels": [{"label": "$(instance)", "x": 500, "y": 1100, "rot": 0}]
+  },
+  "_links": {
+    "spline": {
+      "Dyad": {"placement": {"diagram": {"x1": -50, "x2": 50, "y1": 450, "y2": 550}}}
+    },
+    "flange": {
+      "Dyad": {"placement": {"diagram": {"x1": 950, "x2": 1050, "y1": 450, "y2": 550}}}
+    },
+    "mu_scale": {
+      "Dyad": {
+        "placement": {"diagram": {"x1": 460, "x2": 560, "y1": -50, "y2": 50, "rot": 90}}
+      }
+    },
+    "curve": {
+      "Dyad": {"placement": {"diagram": {"x1": 450, "x2": 550, "y1": 450, "y2": 550}}}
+    }
+  }
+}
+end
+
+test component TestSlipWheel1D
+  "Full engine torque after the 4:1 gear"
+  torque = RotationalComponents.Sources.ConstantTorque(tau_constant = 600) {^torque}
+  inertia = RotationalComponents.Components.Inertia(J = 1) {^inertia}
+  wheel = SlipWheel1D() {^wheel}
+  mass = TranslationalComponents.Components.Mass(m = 1400) {^mass}
+  mu_src = BlockComponents.Sources.Constant(k = 0.2) {^mu_src}
+  fixed_r = RotationalComponents.Components.Fixed() {^fixed_r}
+relations
+  connect(torque.spline, inertia.spline_a) {^id1}
+  connect(torque.support, fixed_r.spline) {^id2}
+  connect(inertia.spline_b, wheel.spline) {^id3}
+  connect(wheel.flange, mass.flange_a) {^id4}
+  connect(mu_src.y, wheel.mu_scale) {^id5}
+  initial inertia.phi = 0
+  initial inertia.w = 0
+  initial mass.s = 0
+  initial mass.v = 0
+metadata {
+  "Dyad": {
+    "tests": {
+      "low_friction": {
+        "stop": 5,
+        "params": {"mu_src.k": 0.2},
+        "atol": {"wheel.kappa": 0.02, "mass.v": 0.02},
+        "expect": {
+          "initial": {"wheel.kappa": 0, "mass.v": 0},
+          "final": {"wheel.kappa": 135.40498, "mass.v": 3.43243},
+          "signals": ["wheel.kappa", "mass.v", "inertia.w"]
+        }
+      },
+      "dry_road": {
+        "stop": 5,
+        "params": {"mu_src.k": 1},
+        "atol": {"wheel.kappa": 0.02, "mass.v": 0.02},
+        "expect": {
+          "initial": {"wheel.kappa": 0, "mass.v": 0},
+          "final": {"wheel.kappa": 0.0075525, "mass.v": 6.86106},
+          "signals": ["wheel.kappa", "mass.v", "inertia.w"]
+        }
+      }
+    }
+  },
+  "_links": {
+    "torque": {"Dyad": {"placement": {"diagram": {"x1": 50, "x2": 150, "y1": 450, "y2": 550}}}},
+    "inertia": {
+      "Dyad": {"placement": {"diagram": {"x1": 250, "x2": 350, "y1": 450, "y2": 550}}}
+    },
+    "wheel": {"Dyad": {"placement": {"diagram": {"x1": 450, "x2": 550, "y1": 450, "y2": 550}}}},
+    "mass": {"Dyad": {"placement": {"diagram": {"x1": 650, "x2": 750, "y1": 450, "y2": 550}}}},
+    "mu_src": {
+      "Dyad": {"placement": {"diagram": {"x1": 350, "x2": 450, "y1": 200, "y2": 300}}}
+    },
+    "fixed_r": {
+      "Dyad": {"placement": {"diagram": {"x1": 50, "x2": 150, "y1": 700, "y2": 800}}}
+    },
+    "id1": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id2": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id3": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id4": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id5": {
+      "Dyad": {"edges": [{"S": 1, "M": [{"x": 501, "y": 250}], "E": 2}], "path": {}}
+    }
+  }
+}
+end

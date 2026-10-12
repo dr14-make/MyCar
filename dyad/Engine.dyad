@@ -1,0 +1,128 @@
+"""
+Torque command in, shaft torque out, through a transport delay, a first-order lag and a torque
+ceiling.
+"""
+component Engine
+  "Commanded torque"
+  tau_cmd = RealInput() {^tau_cmd}
+  "Output shaft"
+  spline = Spline() {^spline}
+  "Engine mounts"
+  support = Spline() {^support}
+  # m = n - 1 leaves the delay without direct feedthrough, so a command step cannot leak through
+  # the limiter before the delay has elapsed.
+  delay = BlockComponents.Nonlinear.PadeDelay(n = 6, m = 5, delayTime = theta_e) {^delay}
+  lag = BlockComponents.Continuous.FirstOrder(T = tau_e) {^lag}
+  limiter = BlockComponents.Nonlinear.Limiter(y_max = T_max, y_min = 0) {^limiter}
+  torque = RotationalComponents.Sources.TorqueSource() {^torque}
+  # Structural because PadeDelay builds its coefficients from the delay when it is compiled.
+  "Injection-to-torque transport delay"
+  structural parameter theta_e::Time = 0.3
+  "Manifold-filling first-order lag"
+  parameter tau_e::Time = 0.3
+  "Peak deliverable torque"
+  parameter T_max::Torque = 150
+relations
+  connect(tau_cmd, delay.u) {^id1}
+  connect(delay.y, lag.u) {^id2}
+  connect(lag.y, limiter.u) {^id3}
+  connect(limiter.y, torque.tau) {^id4}
+  connect(torque.spline, spline) {^id5}
+  connect(torque.support, support) {^id6}
+metadata {
+  "Dyad": {
+    "icons": {"default": "dyad://MyCar/Engine.svg"},
+    "labels": [{"label": "$(instance)", "x": 500, "y": 1100, "rot": 0}]
+  },
+  "_links": {
+    "tau_cmd": {
+      "Dyad": {
+        "placement": {
+          "icon": {"x1": -60, "x2": 40, "y1": 450, "y2": 550},
+          "diagram": {"x1": -60, "x2": 40, "y1": 450, "y2": 550}
+        }
+      }
+    },
+    "spline": {
+      "Dyad": {
+        "placement": {
+          "icon": {"x1": 950, "x2": 1050, "y1": 450, "y2": 550},
+          "diagram": {"x1": 950, "x2": 1050, "y1": 450, "y2": 550}
+        }
+      }
+    },
+    "support": {
+      "Dyad": {
+        "placement": {
+          "icon": {"x1": 450, "x2": 550, "y1": 950, "y2": 1050},
+          "diagram": {"x1": 450, "x2": 550, "y1": 950, "y2": 1050}
+        }
+      }
+    },
+    "delay": {"Dyad": {"placement": {"diagram": {"x1": 110, "x2": 210, "y1": 450, "y2": 550}}}},
+    "lag": {"Dyad": {"placement": {"diagram": {"x1": 300, "x2": 400, "y1": 450, "y2": 550}}}},
+    "limiter": {"Dyad": {"placement": {"diagram": {"x1": 490, "x2": 590, "y1": 450, "y2": 550}}}},
+    "torque": {"Dyad": {"placement": {"diagram": {"x1": 680, "x2": 780, "y1": 450, "y2": 550}}}},
+    "id1": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id2": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id3": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id4": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id5": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id6": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 730, "y": 900}, {"x": 500, "y": 900}], "E": 2}],
+        "path": {}
+      }
+    }
+  }
+}
+end
+
+"""A torque command above the ceiling, stepped in at 0.5 s, into a 1 kg·m² flywheel."""
+component EngineStep
+  cmd = BlockComponents.Sources.Step(height = 200, offset = 0, start_time = 0.5) {^cmd}
+  engine = Engine() {^engine}
+  "Unit inertia, so its angular acceleration reads as the delivered torque"
+  load = RotationalComponents.Components.Inertia(J = 1) {^load}
+  mounts = RotationalComponents.Components.Fixed() {^mounts}
+relations
+  connect(cmd.y, engine.tau_cmd) {^id1}
+  connect(engine.spline, load.spline_a) {^id2}
+  connect(engine.support, mounts.spline) {^id3}
+  initial engine.lag.x = 0
+  initial load.phi = 0
+  initial load.w = 0
+metadata {
+  "Dyad": {
+    "tests": {
+      "case1": {
+        "stop": 3,
+        "atol": {"engine.limiter.y": 0.001, "load.w": 0.001},
+        "expect": {
+          "initial": {"engine.limiter.y": 0, "load.w": 0},
+          "final": {"engine.limiter.y": 150},
+          "signals": ["engine.limiter.y", "engine.delay.y", "load.w"]
+        }
+      }
+    }
+  },
+  "_links": {
+    "cmd": {"Dyad": {"placement": {"diagram": {"x1": 100, "x2": 200, "y1": 450, "y2": 550}}}},
+    "engine": {
+      "Dyad": {"placement": {"diagram": {"x1": 350, "x2": 450, "y1": 450, "y2": 550}}}
+    },
+    "load": {"Dyad": {"placement": {"diagram": {"x1": 600, "x2": 700, "y1": 450, "y2": 550}}}},
+    "mounts": {
+      "Dyad": {"placement": {"diagram": {"x1": 350, "x2": 450, "y1": 700, "y2": 800}}}
+    },
+    "id1": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id2": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id3": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}}
+  }
+}
+end
+
+analysis EngineStepTransient
+  extends TransientAnalysis(stop = 3)
+  model = EngineStep()
+end
