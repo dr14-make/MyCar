@@ -7,11 +7,20 @@ component CruiseController
   gain = BlockComponents.Math.Gain(k = k) {^gain}
   "Proportional gain"
   parameter k::Real() = 56
+  add_pid = BlockComponents.Math.Add3() {^add_pid}
+  integrator = BlockComponents.Continuous.Integrator(x0 = x0i, k = 1.0 / Ti) {^integrator}
+  constant1 = BlockComponents.Sources.Constant(k = 0) {^constant1}
+  parameter Ti::Real() = 10
+  parameter x0i::Real() = 0
 relations
-  connect(u_s, error.u1) {^id6}
-  connect(u_m, error.u2) {^id7}
-  connect(gain.y, y) {^id8}
-  connect(error.y, gain.u) {^id9}
+  connect(u_s, error.u1) {^id9}
+  connect(u_m, error.u2) {^id10}
+  connect(gain.y, y) {^id11}
+  connect(add_pid.y, gain.u) {^id12}
+  connect(error.y, add_pid.u1) {^id13}
+  connect(error.y, integrator.u) {^id14}
+  connect(integrator.y, add_pid.u2) {^id15}
+  connect(constant1.y, add_pid.u3) {^id16}
 metadata {
   "Dyad": {
     "experiments": {},
@@ -50,9 +59,18 @@ metadata {
     "gain": {
       "Dyad": {"placement": {"diagram": {"x1": 680, "x2": 780, "y1": 280, "y2": 380}}}
     },
-    "id6": {"Dyad": {"edges": [{"S": 1, "M": [{"x": -10, "y": 270}], "E": 2}], "path": {}}},
-    "id7": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 120, "y": 330}], "E": 2}], "path": {}}},
-    "id8": {
+    "add_pid": {
+      "Dyad": {"placement": {"diagram": {"x1": 510, "x2": 610, "y1": 280, "y2": 380}}}
+    },
+    "integrator": {
+      "Dyad": {"placement": {"diagram": {"x1": 340, "x2": 440, "y1": 460, "y2": 560}}}
+    },
+    "constant1": {
+      "Dyad": {"placement": {"diagram": {"x1": 340, "x2": 440, "y1": 640, "y2": 740}}}
+    },
+    "id9": {"Dyad": {"edges": [{"S": 1, "M": [{"x": -10, "y": 270}], "E": 2}], "path": {}}},
+    "id10": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 120, "y": 330}], "E": 2}], "path": {}}},
+    "id11": {
       "Dyad": {
         "edges": [
           {
@@ -64,9 +82,23 @@ metadata {
         "path": {}
       }
     },
-    "id9": {
+    "id12": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id13": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id14": {
       "Dyad": {
-        "edges": [{"S": 1, "M": [{"x": 495, "y": 300}, {"x": 495, "y": 330}], "E": 2}],
+        "edges": [{"S": 1, "M": [{"x": 320, "y": 300}, {"x": 320, "y": 510}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id15": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 467.5, "y": 510}, {"x": 467.5, "y": 330}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id16": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 477.5, "y": 690}, {"x": 477.5, "y": 360}], "E": 2}],
         "path": {}
       }
     }
