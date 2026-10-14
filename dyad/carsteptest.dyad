@@ -1,0 +1,40 @@
+"short CarStepTest component description"
+component CarStepTest
+  cmd = BlockComponents.Sources.Step(offset = 31.078, start_time = 50, height = 9.041) {^cmd}
+  plant = MyCar.Car() {^plant}
+relations
+  initial plant.body.mass.s = 0
+  initial plant.body.mass.v = 25
+  initial plant.engine.lag.x = 31.078
+  connect(cmd.y, plant.tau_cmd) {^id3}
+metadata {
+  "Dyad": {
+    "experiments": {},
+    "tests": {},
+    "labels": [
+      {
+        "label": "$(instance)",
+        "x": 500,
+        "y": 1100,
+        "rot": 0,
+        "layer": "icon",
+        "attrs": {}
+      }
+    ],
+    "icons": {"default": "dyad://Dyad/Default.svg"},
+    "path": {},
+    "doc": {"behavior": true},
+    "deprecated": null,
+    "panel": {}
+  },
+  "_links": {
+    "cmd": {
+      "Dyad": {"placement": {"diagram": {"x1": 410, "x2": 510, "y1": 450, "y2": 550}}}
+    },
+    "plant": {
+      "Dyad": {"placement": {"diagram": {"x1": 600, "x2": 700, "y1": 450, "y2": 550}}}
+    },
+    "id3": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}}
+  }
+}
+end

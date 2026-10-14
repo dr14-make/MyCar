@@ -1,0 +1,99 @@
+"Longitudinal car on a flat road: torque command in, speed in km/h out."
+component GradeCar
+  "Commanded engine torque"
+  tau_cmd = Dyad.RealInput() {^tau_cmd}
+  "Vehicle speed in km/h"
+  v_kmh = Dyad.RealOutput() {^v_kmh}
+  engine = MyCar.Engine() {^engine}
+  driveline = MyCar.Driveline() {^driveline}
+  vsensor = TranslationalComponents.Sensors.VelocitySensor() {^vsensor}
+  to_kmh = BlockComponents.Math.Gain(k = 3.6) {^to_kmh}
+  "Engine mounts and gearbox housing"
+  rot_ground = RotationalComponents.Components.Fixed() {^rot_ground}
+  "Road under the wheel"
+  trans_ground = TranslationalComponents.Components.Fixed() {^trans_ground}
+  body = MyCar.GradeBody() {^body}
+  grade = Dyad.RealInput() {^grade}
+relations
+  connect(tau_cmd, engine.tau_cmd) {^id11}
+  connect(engine.spline, driveline.spline) {^id12}
+  connect(engine.support, rot_ground.spline) {^id13}
+  connect(driveline.support_r, rot_ground.spline) {^id14}
+  connect(driveline.support_t, trans_ground.flange) {^id15}
+  connect(vsensor.v, to_kmh.u) {^id16}
+  connect(to_kmh.y, v_kmh) {^id17}
+  connect(driveline.flange, vsensor.flange, body.flange) {^id18}
+  connect(grade, body.grade) {^id19}
+metadata {
+  "Dyad": {
+    "icons": {"default": "dyad://MyCar/Car.svg"},
+    "labels": [{"label": "$(instance)", "x": 500, "y": 1100, "rot": 0}]
+  },
+  "_links": {
+    "tau_cmd": {
+      "Dyad": {"placement": {"diagram": {"x1": -50, "x2": 50, "y1": 450, "y2": 550}}}
+    },
+    "v_kmh": {
+      "Dyad": {"placement": {"diagram": {"x1": 950, "x2": 1050, "y1": 450, "y2": 550}}}
+    },
+    "engine": {
+      "Dyad": {"placement": {"diagram": {"x1": 120, "x2": 220, "y1": 450, "y2": 550}}}
+    },
+    "driveline": {
+      "Dyad": {"placement": {"diagram": {"x1": 320, "x2": 420, "y1": 450, "y2": 550}}}
+    },
+    "vsensor": {
+      "Dyad": {"placement": {"diagram": {"x1": 560, "x2": 660, "y1": 250, "y2": 350}}}
+    },
+    "to_kmh": {
+      "Dyad": {"placement": {"diagram": {"x1": 760, "x2": 860, "y1": 250, "y2": 350}}}
+    },
+    "rot_ground": {
+      "Dyad": {"placement": {"diagram": {"x1": 120, "x2": 220, "y1": 700, "y2": 800}}}
+    },
+    "trans_ground": {
+      "Dyad": {"placement": {"diagram": {"x1": 331, "x2": 431, "y1": 800, "y2": 900}}}
+    },
+    "body": {
+      "Dyad": {"placement": {"diagram": {"x1": 560, "x2": 660, "y1": 450, "y2": 550}}}
+    },
+    "grade": {
+      "Dyad": {"placement": {"diagram": {"x1": -50, "x2": 30, "y1": 910, "y2": 990}}}
+    },
+    "id11": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id12": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id13": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id14": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 358, "y": 650}, {"x": 170, "y": 650}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id15": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id16": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id17": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 900, "y": 300}, {"x": 900, "y": 500}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id18": {
+      "Dyad": {
+        "edges": [
+          {"S": 1, "M": [{"x": 490, "y": 500}], "E": -1},
+          {"S": -1, "M": [{"x": 490, "y": 300}], "E": 2},
+          {"S": 3, "M": [{"x": 700, "y": 500}, {"x": 700, "y": 410}], "E": -1}
+        ],
+        "junctions": [{"x": 490, "y": 410}],
+        "path": {}
+      }
+    },
+    "id19": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 520, "y": 950}, {"x": 520, "y": 500}], "E": 2}],
+        "path": {}
+      }
+    }
+  }
+}
+end

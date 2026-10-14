@@ -1,0 +1,75 @@
+"short CruiseController component description"
+component CruiseController
+  error = BlockComponents.Math.Add(k2 = -1.0) {^error}
+  u_s = Dyad.RealInput() {^u_s}
+  u_m = Dyad.RealInput() {^u_m}
+  y = Dyad.RealOutput() {^y}
+  gain = BlockComponents.Math.Gain(k = k) {^gain}
+  "Proportional gain"
+  parameter k::Real() = 56
+relations
+  connect(u_s, error.u1) {^id6}
+  connect(u_m, error.u2) {^id7}
+  connect(gain.y, y) {^id8}
+  connect(error.y, gain.u) {^id9}
+metadata {
+  "Dyad": {
+    "experiments": {},
+    "tests": {},
+    "labels": [
+      {
+        "label": "$(instance)",
+        "x": 500,
+        "y": 1100,
+        "rot": 0,
+        "layer": "icon",
+        "attrs": {}
+      }
+    ],
+    "icons": {"default": "dyad://Dyad/Default.svg"},
+    "path": {},
+    "doc": {"behavior": true},
+    "deprecated": null,
+    "panel": {}
+  },
+  "_links": {
+    "error": {
+      "Dyad": {"placement": {"diagram": {"x1": 210, "x2": 310, "y1": 250, "y2": 350}}}
+    },
+    "u_s": {
+      "Dyad": {"placement": {"diagram": {"x1": -50, "x2": 30, "y1": 220, "y2": 300}}}
+    },
+    "u_m": {
+      "Dyad": {
+        "placement": {"diagram": {"x1": 80, "x2": 160, "y1": 960, "y2": 1040, "rot": 270}}
+      }
+    },
+    "y": {
+      "Dyad": {"placement": {"diagram": {"x1": 970, "x2": 1050, "y1": 460, "y2": 540}}}
+    },
+    "gain": {
+      "Dyad": {"placement": {"diagram": {"x1": 680, "x2": 780, "y1": 280, "y2": 380}}}
+    },
+    "id6": {"Dyad": {"edges": [{"S": 1, "M": [{"x": -10, "y": 270}], "E": 2}], "path": {}}},
+    "id7": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 120, "y": 330}], "E": 2}], "path": {}}},
+    "id8": {
+      "Dyad": {
+        "edges": [
+          {
+            "S": 1,
+            "M": [{"x": 910, "y": 330}, {"x": 910, "y": 460}, {"x": 1010, "y": 460}],
+            "E": 2
+          }
+        ],
+        "path": {}
+      }
+    },
+    "id9": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 495, "y": 300}, {"x": 495, "y": 330}], "E": 2}],
+        "path": {}
+      }
+    }
+  }
+}
+end
