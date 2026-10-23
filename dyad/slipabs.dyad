@@ -1,0 +1,73 @@
+"short SlipABS component description"
+component SlipABS
+  kappa = RealInput() {^kappa}
+  v = RealInput() {^v}
+  demand = RealInput() {^demand}
+  p_cmd = RealOutput() {^p_cmd}
+  pressure = VehicleSystemsComponents.Vehicle.ABSPressureIntegrator(T_track = 0.01) {^pressure}
+  parameter lambda_target::Real = 0.04
+  parameter k_inc::Real = 2.9e7
+  parameter k_dec::Real = 5.8e7
+  parameter v_min::Velocity = 1.5
+  variable cycled::Real
+  parameter T_p::Time = 0.03
+  parameter T_f::Time = 0.003
+  variable kappa_f::Real
+  variable kappa_dot::Real
+  variable kappa_pred::Real
+relations
+  initial kappa_f = 0
+  der(kappa_f) = (kappa - kappa_f) / T_f
+  kappa_dot = (kappa - kappa_f) / T_f
+  kappa_pred = kappa + T_p * kappa_dot
+  initial cycled = 0
+  der(cycled) = ifelse(v > v_min and kappa < -lambda_target and kappa_pred < -lambda_target, 1000 * (1 - cycled), 0)
+  connect(demand, pressure.demand) {^id6}
+  pressure.requested_rate = ifelse(kappa_pred < -lambda_target, -k_dec, k_inc)
+  pressure.active = ifelse(v > v_min and cycled > 0.5, 1.0, 0.0)
+  p_cmd = ifelse(cycled > 0.5, pressure.cmd, demand)
+metadata {
+  "Dyad": {
+    "experiments": {},
+    "tests": {},
+    "labels": [
+      {
+        "label": "$(instance)",
+        "x": 500,
+        "y": 1100,
+        "rot": 0,
+        "layer": "icon",
+        "attrs": {}
+      }
+    ],
+    "icons": {"default": "dyad://Dyad/Default.svg"},
+    "path": {},
+    "doc": {"behavior": true},
+    "deprecated": null,
+    "panel": {}
+  },
+  "_links": {
+    "kappa": {
+      "Dyad": {"placement": {"diagram": {"x1": -50, "x2": 50, "y1": 150, "y2": 250}}}
+    },
+    "v": {
+      "Dyad": {"placement": {"diagram": {"x1": -50, "x2": 50, "y1": 450, "y2": 550}}}
+    },
+    "demand": {
+      "Dyad": {"placement": {"diagram": {"x1": -50, "x2": 50, "y1": 750, "y2": 850}}}
+    },
+    "p_cmd": {
+      "Dyad": {"placement": {"diagram": {"x1": 950, "x2": 1050, "y1": 450, "y2": 550}}}
+    },
+    "pressure": {
+      "Dyad": {"placement": {"diagram": {"x1": 145, "x2": 245, "y1": 165, "y2": 265}}}
+    },
+    "id6": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 107.5, "y": 800}, {"x": 107.5, "y": 190}], "E": 2}],
+        "path": {}
+      }
+    }
+  }
+}
+end
