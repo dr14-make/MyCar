@@ -1,0 +1,58 @@
+"short RefSpeedEstimator component description"
+component RefSpeedEstimator
+  omega = RealInput() {^omega}
+  kappa_hat = RealOutput() {^kappa_hat}
+  v_ref = RealOutput() {^v_ref}
+  a_w = RealOutput() {^a_w}
+  parameter radius::Length = 0.31
+  parameter a_ref::Acceleration = 8
+  parameter v0::Velocity = 25
+  parameter T_up::Time = 0.01
+  parameter v_eps::Velocity = 0.5
+  parameter T_f::Time = 0.005
+  variable v_w::Velocity
+  variable v_f::Velocity
+relations
+  v_w = omega * radius
+  initial v_ref = v0
+  der(v_ref) = ifelse(v_w > v_ref, (v_w - v_ref) / T_up, -a_ref)
+  kappa_hat = (v_w - v_ref) / max(v_ref, v_eps)
+  initial v_f = v0
+  der(v_f) = (v_w - v_f) / T_f
+  a_w = (v_w - v_f) / T_f
+metadata {
+  "Dyad": {
+    "experiments": {},
+    "tests": {},
+    "labels": [
+      {
+        "label": "$(instance)",
+        "x": 500,
+        "y": 1100,
+        "rot": 0,
+        "layer": "icon",
+        "attrs": {}
+      }
+    ],
+    "icons": {"default": "dyad://Dyad/Default.svg"},
+    "path": {},
+    "doc": {"behavior": true},
+    "deprecated": null,
+    "panel": {}
+  },
+  "_links": {
+    "omega": {
+      "Dyad": {"placement": {"diagram": {"x1": -50, "x2": 50, "y1": 450, "y2": 550}}}
+    },
+    "kappa_hat": {
+      "Dyad": {"placement": {"diagram": {"x1": 950, "x2": 1050, "y1": 200, "y2": 300}}}
+    },
+    "v_ref": {
+      "Dyad": {"placement": {"diagram": {"x1": 950, "x2": 1050, "y1": 450, "y2": 550}}}
+    },
+    "a_w": {
+      "Dyad": {"placement": {"diagram": {"x1": 950, "x2": 1050, "y1": 700, "y2": 800}}}
+    }
+  }
+}
+end

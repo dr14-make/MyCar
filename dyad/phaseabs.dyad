@@ -1,0 +1,71 @@
+"short SlipABS component description"
+component PhaseABS
+  kappa = RealInput() {^kappa}
+  a_w = RealInput() {^a_w}
+  v = RealInput() {^v}
+  demand = RealInput() {^demand}
+  p_cmd = RealOutput() {^p_cmd}
+  pressure = VehicleSystemsComponents.Vehicle.ABSPressureIntegrator(T_track = 0.01) {^pressure}
+  parameter a_minus::Acceleration = 12
+  parameter a_plus::Acceleration = 3
+  parameter lambda_1::Real = 0.2
+  parameter k_dec::Real = 5.8e7
+  parameter k_inc::Real = 1.16e7
+  parameter v_min::Velocity = 1.5
+  parameter T_latch::Time = 0.001
+  variable phase::Real
+  variable cycled::Real
+relations
+  phase = ifelse(a_w > a_plus, 0, ifelse(a_w < -a_minus or kappa < -lambda_1, -1, 1))
+  initial cycled = 0
+  der(cycled) = ifelse(phase < -0.5, (1 - cycled) / T_latch, 0)
+  connect(demand, pressure.demand) {^id7}
+  pressure.requested_rate = ifelse(phase < -0.5, -k_dec, ifelse(phase < 0.5, 0, k_inc))
+  pressure.active = ifelse(v > v_min and cycled > 0.5, 1.0, 0.0)
+  p_cmd = ifelse(cycled > 0.5, pressure.cmd, demand)
+metadata {
+  "Dyad": {
+    "experiments": {},
+    "tests": {},
+    "labels": [
+      {
+        "label": "$(instance)",
+        "x": 500,
+        "y": 1100,
+        "rot": 0,
+        "layer": "icon",
+        "attrs": {}
+      }
+    ],
+    "icons": {"default": "dyad://Dyad/Default.svg"},
+    "path": {},
+    "doc": {"behavior": true},
+    "deprecated": null,
+    "panel": {}
+  },
+  "_links": {
+    "kappa": {"Dyad": {"placement": {"diagram": {"x1": -50, "x2": 50, "y1": 80, "y2": 180}}}},
+    "a_w": {
+      "Dyad": {"placement": {"diagram": {"x1": -50, "x2": 50, "y1": 320, "y2": 420}}}
+    },
+    "v": {
+      "Dyad": {"placement": {"diagram": {"x1": -50, "x2": 50, "y1": 570, "y2": 670}}}
+    },
+    "demand": {
+      "Dyad": {"placement": {"diagram": {"x1": -50, "x2": 50, "y1": 830, "y2": 930}}}
+    },
+    "p_cmd": {
+      "Dyad": {"placement": {"diagram": {"x1": 950, "x2": 1050, "y1": 450, "y2": 550}}}
+    },
+    "pressure": {
+      "Dyad": {"placement": {"diagram": {"x1": 265, "x2": 365, "y1": 165, "y2": 265}}}
+    },
+    "id7": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 227.5, "y": 880}, {"x": 227.5, "y": 190}], "E": 2}],
+        "path": {}
+      }
+    }
+  }
+}
+end

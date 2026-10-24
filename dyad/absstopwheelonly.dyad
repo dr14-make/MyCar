@@ -1,0 +1,224 @@
+"short PedalStop component description"
+component ABSStopWheelOnly
+  body = MyCar.Body() {^body}
+  command = BlockComponents.Sources.Step(height = pedal, start_time = 0.5) {^command}
+  pedal_unit = VehicleSystemsComponents.Vehicle.Brake.BrakePedal() {^pedal_unit}
+  booster = VehicleSystemsComponents.Vehicle.Brake.StaticBooster() {^booster}
+  master = VehicleSystemsComponents.Vehicle.Brake.TandemMasterCylinder() {^master}
+  line_f = VehicleSystemsComponents.Vehicle.Brake.BrakeLine() {^line_f}
+  line_r = VehicleSystemsComponents.Vehicle.Brake.BrakeLine(L = 4.0) {^line_r}
+  wheel = VehicleSystemsComponents.Vehicle.Wheel.HydraulicBrakedWheel() {^wheel}
+  fixed_hydraulic = TranslationalComponents.Components.Fixed() {^fixed_hydraulic}
+  fixed = RotationalComponents.Components.Fixed() {^fixed}
+  speed = TranslationalComponents.Sensors.VelocitySensor() {^speed}
+  road = BlockComponents.Sources.Constant(k = road_mu) {^road}
+  valve_f = VehicleSystemsComponents.Vehicle.Brake.ABSValve() {^valve_f}
+  valve_r = VehicleSystemsComponents.Vehicle.Brake.ABSValve() {^valve_r}
+  parameter pedal::Real() = 0.6
+  parameter road_mu::Real() = 1.0
+  path medium::HydraulicComponents.Interfaces.AbstractMedium = HydraulicComponents.IsothermalCompressible(bulk_modulus = 1.4e9, density = 1045.0, let_gas = false)
+  abs = MyCar.PhaseABS() {^abs}
+  wspeed = RotationalComponents.Sensors.VelocitySensor() {^wspeed}
+  est = MyCar.RefSpeedEstimator(a_ref = a_ref) {^est}
+  parameter a_ref::Real(units = "m/s2") = 8
+relations
+  connect(command.y, pedal_unit.u) {^id18}
+  connect(pedal_unit.rod, booster.input) {^id19}
+  connect(booster.rod_out, master.pushrod) {^id20}
+  connect(pedal_unit.support, fixed_hydraulic.flange) {^id21}
+  connect(booster.support, fixed_hydraulic.flange) {^id22}
+  connect(master.support, fixed_hydraulic.flange) {^id23}
+  connect(line_f.port_b, wheel.front) {^id24}
+  connect(line_r.port_b, wheel.rear) {^id25}
+  connect(road.y, wheel.mu_scale) {^id26}
+  connect(wheel.support, fixed.spline) {^id27}
+  connect(wheel.flange, body.flange) {^id28}
+  connect(speed.flange, body.flange) {^id29}
+  continuity(medium, master.front.medium)
+  initial wheel.inertia.phi = 0
+  initial wheel.inertia.w = 25 / 0.31
+  initial body.mass.s = 0
+  initial body.mass.v = 25
+  connect(master.front, valve_f.port_a) {^id30}
+  connect(valve_f.port_b, line_f.port_a) {^id31}
+  connect(master.rear, valve_r.port_a) {^id32}
+  connect(valve_r.port_b, line_r.port_a) {^id33}
+  connect(wspeed.spline, wheel.spline) {^id34}
+  connect(wspeed.w, est.omega) {^id35}
+  connect(est.kappa_hat, abs.kappa) {^id36}
+  connect(est.a_w, abs.a_w) {^id37}
+  connect(est.v_ref, abs.v) {^id38}
+  connect(master.p_mc, abs.demand) {^id39}
+  connect(abs.p_cmd, valve_f.p_cmd) {^id40}
+  connect(abs.p_cmd, valve_r.p_cmd) {^id41}
+metadata {
+  "Dyad": {
+    "experiments": {},
+    "tests": {},
+    "labels": [
+      {
+        "label": "$(instance)",
+        "x": 500,
+        "y": 1100,
+        "rot": 0,
+        "layer": "icon",
+        "attrs": {}
+      }
+    ],
+    "icons": {"default": "dyad://Dyad/Default.svg"},
+    "path": {},
+    "doc": {"behavior": true},
+    "deprecated": null,
+    "panel": {}
+  },
+  "_links": {
+    "body": {
+      "Dyad": {"placement": {"diagram": {"x1": 900, "x2": 1000, "y1": 70, "y2": 170}}}
+    },
+    "command": {
+      "Dyad": {"placement": {"diagram": {"x1": 30, "x2": 130, "y1": 100, "y2": 200}}}
+    },
+    "pedal_unit": {
+      "Dyad": {"placement": {"diagram": {"x1": 180, "x2": 280, "y1": 100, "y2": 200}}}
+    },
+    "booster": {
+      "Dyad": {"placement": {"diagram": {"x1": 330, "x2": 430, "y1": 100, "y2": 200}}}
+    },
+    "master": {
+      "Dyad": {"placement": {"diagram": {"x1": 480, "x2": 580, "y1": 100, "y2": 200}}}
+    },
+    "line_f": {
+      "Dyad": {"placement": {"diagram": {"x1": 630, "x2": 730, "y1": 50, "y2": 150}}}
+    },
+    "line_r": {
+      "Dyad": {"placement": {"diagram": {"x1": 630, "x2": 730, "y1": 200, "y2": 300}}}
+    },
+    "wheel": {
+      "Dyad": {"placement": {"diagram": {"x1": 770, "x2": 870, "y1": 120, "y2": 220}}}
+    },
+    "fixed_hydraulic": {
+      "Dyad": {"placement": {"diagram": {"x1": 330, "x2": 430, "y1": 280, "y2": 380}}}
+    },
+    "fixed": {
+      "Dyad": {"placement": {"diagram": {"x1": 800, "x2": 900, "y1": 370, "y2": 470}}}
+    },
+    "speed": {
+      "Dyad": {"placement": {"diagram": {"x1": 900, "x2": 1000, "y1": 250, "y2": 350}}}
+    },
+    "road": {
+      "Dyad": {"placement": {"diagram": {"x1": 650, "x2": 750, "y1": 370, "y2": 470}}}
+    },
+    "valve_f": {
+      "Dyad": {"placement": {"diagram": {"x1": 430, "x2": 530, "y1": 500, "y2": 600}}}
+    },
+    "valve_r": {
+      "Dyad": {"placement": {"diagram": {"x1": 580, "x2": 680, "y1": 500, "y2": 600}}}
+    },
+    "abs": {
+      "Dyad": {"placement": {"diagram": {"x1": 510, "x2": 610, "y1": 730, "y2": 830}}}
+    },
+    "wspeed": {
+      "Dyad": {"placement": {"diagram": {"x1": 50, "x2": 150, "y1": 850, "y2": 950}}}
+    },
+    "est": {
+      "Dyad": {"placement": {"diagram": {"x1": 250, "x2": 350, "y1": 850, "y2": 950}}}
+    },
+    "id18": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id19": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id20": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id21": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 230, "y": 240}, {"x": 380, "y": 240}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id22": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id23": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 530, "y": 240}, {"x": 380, "y": 240}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id24": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 805, "y": 100}], "E": 2}], "path": {}}},
+    "id25": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 835, "y": 250}], "E": 2}], "path": {}}},
+    "id26": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 850, "y": 420}], "E": 2}], "path": {}}},
+    "id27": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 820, "y": 295}, {"x": 850, "y": 295}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id28": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 935, "y": 170}, {"x": 935, "y": 120}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id29": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 950, "y": 300}, {"x": 950, "y": 120}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id30": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 505, "y": 125}, {"x": 505, "y": 550}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id31": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 580, "y": 550}, {"x": 580, "y": 100}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id32": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 620, "y": 175}, {"x": 620, "y": 550}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id33": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 655, "y": 550}, {"x": 655, "y": 250}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id34": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 410, "y": 900}, {"x": 410, "y": 170}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id35": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id36": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 430, "y": 875}, {"x": 430, "y": 743}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id37": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 430, "y": 925}, {"x": 430, "y": 767}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id38": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 430, "y": 900}, {"x": 430, "y": 792}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id39": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 505, "y": 818}], "E": 2}], "path": {}}},
+    "id40": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 480, "y": 780}], "E": 2}], "path": {}}},
+    "id41": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 630, "y": 780}], "E": 2}], "path": {}}}
+  }
+}
+end
+
+analysis ABSStopWheelOnlyTransient
+  extends TransientAnalysis(stop = 6.0, alg = ODEAlg.Tsit5(), dtmax = 1e-3)
+  parameter road_mu::Real = 1.0
+  parameter a_ref::Acceleration = 8
+  model = ABSStopWheelOnly(road_mu = road_mu, a_ref = a_ref)
+end
