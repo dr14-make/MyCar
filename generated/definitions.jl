@@ -16,9 +16,16 @@ if isfile(joinpath((@__DIR__) |> Base.dirname, "dyad", "definitions.jl"))
 end
 
 import BlockComponents
+import DiscreteComponents
+import DyadData
 import DyadInterface
+import ElectricalComponents
+import HydraulicComponents
+import MultibodyComponents
 import RotationalComponents
+import ThermalComponents
 import TranslationalComponents
+import VehicleSystemsComponents
 @doc Markdown.doc"""
 This connector represents an electrical pin with voltage and current as the potential and flow variables, respectively.
 """
