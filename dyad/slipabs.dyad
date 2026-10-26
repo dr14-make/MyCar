@@ -1,0 +1,41 @@
+component SlipABS
+  "Wheel slip, negative while braking"
+  kappa = RealInput() {^kappa}
+  "Vehicle speed"
+  v = RealInput() {^v}
+  "Master-cylinder pressure demand [Pa]"
+  demand = RealInput() {^demand}
+  "Allowed wheel-circuit pressure [Pa]"
+  p_cmd = RealOutput() {^p_cmd}
+  pressure = VehicleSystemsComponents.Vehicle.ABSPressureIntegrator(T_track = 0.01) {^pressure}
+  parameter lambda_target::Real = 0.04
+  parameter k_inc::Real = 2.9e7
+  parameter k_dec::Real = 5.8e7
+  parameter v_min::Velocity = 1.5
+  variable cycled::Real
+  parameter T_p::Time = 0.03
+  parameter T_f::Time = 0.003
+  variable kappa_f::Real
+  variable kappa_dot::Real
+  variable kappa_pred::Real
+relations
+  initial kappa_f = 0
+  der(kappa_f) = (kappa - kappa_f) / T_f
+  kappa_dot = (kappa - kappa_f) / T_f
+  kappa_pred = kappa + T_p * kappa_dot
+  initial cycled = 0
+  der(cycled) = ifelse(v > v_min and kappa < -lambda_target and kappa_pred < -lambda_target, 1000 * (1 - cycled), 0)
+  connect(demand, pressure.demand)
+  pressure.requested_rate = ifelse(kappa_pred < -lambda_target, -k_dec, k_inc)
+  pressure.active = ifelse(v > v_min and cycled > 0.5, 1.0, 0.0)
+  p_cmd = ifelse(cycled > 0.5, pressure.cmd, demand)
+metadata {
+"_links": {
+"kappa": {"Dyad": {"placement": {"icon": {"x1": -50, "x2": 50, "y1": 200, "y2": 300}, "diagram": {"x1": -50, "x2": 50, "y1": 200, "y2": 300}}}},
+"v": {"Dyad": {"placement": {"icon": {"x1": -50, "x2": 50, "y1": 450, "y2": 550}, "diagram": {"x1": -50, "x2": 50, "y1": 450, "y2": 550}}}},
+"demand": {"Dyad": {"placement": {"icon": {"x1": -50, "x2": 50, "y1": 700, "y2": 800}, "diagram": {"x1": -50, "x2": 50, "y1": 700, "y2": 800}}}},
+"p_cmd": {"Dyad": {"placement": {"icon": {"x1": 950, "x2": 1050, "y1": 450, "y2": 550}, "diagram": {"x1": 950, "x2": 1050, "y1": 450, "y2": 550}}}},
+"pressure": {"Dyad": {"placement": {"diagram": {"x1": 400, "x2": 600, "y1": 400, "y2": 600}}}}
+}
+}
+end

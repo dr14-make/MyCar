@@ -1,0 +1,187 @@
+"short PedalStop component description"
+component ABSStop
+  body = MyCar.Body() {^body}
+  command = BlockComponents.Sources.Step(height = pedal, start_time = 0.5) {^command}
+  pedal_unit = VehicleSystemsComponents.Vehicle.Brake.BrakePedal() {^pedal_unit}
+  booster = VehicleSystemsComponents.Vehicle.Brake.StaticBooster() {^booster}
+  master = VehicleSystemsComponents.Vehicle.Brake.TandemMasterCylinder() {^master}
+  line_f = VehicleSystemsComponents.Vehicle.Brake.BrakeLine() {^line_f}
+  line_r = VehicleSystemsComponents.Vehicle.Brake.BrakeLine(L = 4.0) {^line_r}
+  wheel = VehicleSystemsComponents.Vehicle.Wheel.HydraulicBrakedWheel() {^wheel}
+  fixed_hydraulic = TranslationalComponents.Components.Fixed() {^fixed_hydraulic}
+  fixed = RotationalComponents.Components.Fixed() {^fixed}
+  road = BlockComponents.Sources.Constant(k = road_mu) {^road}
+  speed = TranslationalComponents.Sensors.VelocitySensor() {^speed}
+  valve_f = VehicleSystemsComponents.Vehicle.Brake.ABSValve() {^valve_f}
+  valve_r = VehicleSystemsComponents.Vehicle.Brake.ABSValve() {^valve_r}
+  abs = MyCar.SlipABS(lambda_target = lambda_target, T_p = T_p) {^abs}
+  parameter pedal::Real() = 0.6
+  parameter road_mu::Real() = 1.0
+  path medium::HydraulicComponents.Interfaces.AbstractMedium = HydraulicComponents.IsothermalCompressible(bulk_modulus = 1.4e9, density = 1045.0, let_gas = false)
+  parameter T_p::Real(units = "s") = 0.03
+  parameter lambda_target::Real() = 0.04
+relations
+  connect(command.y, pedal_unit.u) {^id16}
+  connect(pedal_unit.rod, booster.input) {^id17}
+  connect(booster.rod_out, master.pushrod) {^id18}
+  connect(pedal_unit.support, fixed_hydraulic.flange) {^id19}
+  connect(booster.support, fixed_hydraulic.flange) {^id20}
+  connect(master.support, fixed_hydraulic.flange) {^id21}
+  connect(line_f.port_b, wheel.front) {^id22}
+  connect(line_r.port_b, wheel.rear) {^id23}
+  connect(wheel.support, fixed.spline) {^id24}
+  connect(road.y, wheel.mu_scale) {^id25}
+  connect(wheel.flange, body.flange) {^id26}
+  connect(speed.flange, body.flange) {^id27}
+  continuity(medium, master.front.medium)
+  initial wheel.inertia.phi = 0
+  initial wheel.inertia.w = 25 / 0.31
+  initial body.mass.s = 0
+  initial body.mass.v = 25
+  connect(master.front, valve_f.port_a) {^id28}
+  connect(valve_f.port_b, line_f.port_a) {^id29}
+  connect(master.rear, valve_r.port_a) {^id30}
+  connect(valve_r.port_b, line_r.port_a) {^id31}
+  connect(abs.p_cmd, valve_f.p_cmd) {^id32}
+  connect(wheel.kappa, abs.kappa) {^id33}
+  connect(speed.v, abs.v) {^id34}
+  connect(abs.demand, master.p_mc) {^id35}
+  connect(valve_r.p_cmd, abs.p_cmd) {^id36}
+metadata {
+  "Dyad": {
+    "experiments": {},
+    "tests": {},
+    "labels": [
+      {
+        "label": "$(instance)",
+        "x": 500,
+        "y": 1100,
+        "rot": 0,
+        "layer": "icon",
+        "attrs": {}
+      }
+    ],
+    "icons": {"default": "dyad://Dyad/Default.svg"},
+    "path": {},
+    "doc": {"behavior": true},
+    "deprecated": null,
+    "panel": {}
+  },
+  "_links": {
+    "body": {
+      "Dyad": {"placement": {"diagram": {"x1": 860, "x2": 960, "y1": 450, "y2": 550}}}
+    },
+    "command": {"Dyad": {"placement": {"diagram": {"x1": 80, "x2": 180, "y1": 80, "y2": 180}}}},
+    "pedal_unit": {
+      "Dyad": {"placement": {"diagram": {"x1": 250, "x2": 350, "y1": 80, "y2": 180}}}
+    },
+    "booster": {
+      "Dyad": {"placement": {"diagram": {"x1": 430, "x2": 530, "y1": 80, "y2": 180}}}
+    },
+    "master": {
+      "Dyad": {"placement": {"diagram": {"x1": 610, "x2": 710, "y1": 80, "y2": 180}}}
+    },
+    "line_f": {
+      "Dyad": {"placement": {"diagram": {"x1": 800, "x2": 900, "y1": 30, "y2": 130}}}
+    },
+    "line_r": {
+      "Dyad": {"placement": {"diagram": {"x1": 800, "x2": 900, "y1": 210, "y2": 310}}}
+    },
+    "wheel": {
+      "Dyad": {"placement": {"diagram": {"x1": 670, "x2": 770, "y1": 450, "y2": 550}}}
+    },
+    "fixed_hydraulic": {
+      "Dyad": {"placement": {"diagram": {"x1": 430, "x2": 530, "y1": 290, "y2": 390}}}
+    },
+    "fixed": {
+      "Dyad": {"placement": {"diagram": {"x1": 670, "x2": 770, "y1": 700, "y2": 800}}}
+    },
+    "road": {
+      "Dyad": {"placement": {"diagram": {"x1": 440, "x2": 540, "y1": 510, "y2": 610}}}
+    },
+    "speed": {
+      "Dyad": {"placement": {"diagram": {"x1": 860, "x2": 960, "y1": 640, "y2": 740}}}
+    },
+    "valve_f": {
+      "Dyad": {"placement": {"diagram": {"x1": 100, "x2": 200, "y1": 300, "y2": 400}}}
+    },
+    "valve_r": {
+      "Dyad": {"placement": {"diagram": {"x1": 240, "x2": 340, "y1": 300, "y2": 400}}}
+    },
+    "abs": {
+      "Dyad": {"placement": {"diagram": {"x1": 190, "x2": 290, "y1": 700, "y2": 800}}}
+    },
+    "id16": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id17": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id18": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id19": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 300, "y": 235}, {"x": 480, "y": 235}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id20": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id21": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 660, "y": 235}, {"x": 480, "y": 235}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id22": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 705, "y": 80}], "E": 2}], "path": {}}},
+    "id23": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 735, "y": 260}], "E": 2}], "path": {}}},
+    "id24": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id25": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 750, "y": 560}], "E": 2}], "path": {}}},
+    "id26": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}},
+    "id27": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 910, "y": 690}, {"x": 910, "y": 500}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id28": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 405, "y": 105}, {"x": 405, "y": 350}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id29": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 500, "y": 350}, {"x": 500, "y": 80}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id30": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 475, "y": 155}, {"x": 475, "y": 350}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id31": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 570, "y": 350}, {"x": 570, "y": 260}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id32": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 150, "y": 750}], "E": 2}], "path": {}}},
+    "id33": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 680, "y": 725}], "E": 2}], "path": {}}},
+    "id34": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 575, "y": 690}, {"x": 575, "y": 750}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id35": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 635, "y": 775}], "E": 2}], "path": {}}},
+    "id36": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}}
+  }
+}
+end
+
+analysis ABSStopTransient
+  extends TransientAnalysis(stop = 6.0, alg = ODEAlg.Tsit5(), dtmax = 1e-3)
+  model = ABSStop(road_mu = road_mu, T_p = T_p, lambda_target = lambda_target, pedal = pedal)
+  parameter road_mu::Real = 1.0
+  parameter T_p::Time = 0.03
+  parameter lambda_target::Real = 0.04
+  parameter pedal::Real = 0.6
+relations
+end
