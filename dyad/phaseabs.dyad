@@ -1,0 +1,51 @@
+component PhaseABS
+  "Estimated wheel slip, negative while braking"
+  kappa = RealInput() {^kappa}
+  "Wheel surface acceleration"
+  a_w = RealInput() {^a_w}
+  "Estimated vehicle speed"
+  v = RealInput() {^v}
+  "Master-cylinder pressure demand [Pa]"
+  demand = RealInput() {^demand}
+  "Allowed wheel-circuit pressure [Pa]"
+  p_cmd = RealOutput() {^p_cmd}
+  pressure = VehicleSystemsComponents.Vehicle.ABSPressureIntegrator(T_track = 0.01) {^pressure}
+  "Wheel deceleration that starts a dump (-a)"
+  parameter a_minus::Acceleration = 12
+  "Wheel acceleration that holds the pressure (+a)"
+  parameter a_plus::Acceleration = 3
+  "Estimated slip that starts a dump"
+  parameter lambda_1::Real = 0.2
+  "Dump rate [Pa/s]"
+  parameter k_dec::Real = 5.8e7
+  "Rebuild rate after the first dump [Pa/s]"
+  parameter k_inc::Real = 1.16e7
+  "ABS off below this speed"
+  parameter v_min::Velocity = 1.5
+  "Time constant of the cycled latch"
+  parameter T_latch::Time = 0.001
+  "-1 decrease, 0 hold, 1 increase"
+  variable phase::Real
+  "1 once the first dump has happened"
+  variable cycled::Real
+relations
+  phase = ifelse(a_w > a_plus, 0, ifelse(a_w < -a_minus or kappa < -lambda_1, -1, 1))
+  initial cycled = 0
+  der(cycled) = ifelse(phase < -0.5, (1 - cycled) / T_latch, 0)
+  connect(demand, pressure.demand) {^id1}
+  pressure.requested_rate = ifelse(phase < -0.5, -k_dec, ifelse(phase < 0.5, 0, k_inc))
+  pressure.active = ifelse(v > v_min and cycled > 0.5, 1.0, 0.0)
+  p_cmd = ifelse(cycled > 0.5, pressure.cmd, demand)
+metadata {
+"_links": {
+"kappa": {"Dyad": {"placement": {"icon": {"x1": -50, "x2": 50, "y1": 100, "y2": 200}, "diagram": {"x1": -50, "x2": 50, "y1": 100, "y2": 200}}}},
+"a_w": {"Dyad": {"placement": {"icon": {"x1": -50, "x2": 50, "y1": 330, "y2": 430}, "diagram": {"x1": -50, "x2": 50, "y1": 330, "y2": 430}}}},
+"v": {"Dyad": {"placement": {"icon": {"x1": -50, "x2": 50, "y1": 570, "y2": 670}, "diagram": {"x1": -50, "x2": 50, "y1": 570, "y2": 670}}}},
+"demand": {"Dyad": {"placement": {"icon": {"x1": -50, "x2": 50, "y1": 800, "y2": 900}, "diagram": {"x1": -50, "x2": 50, "y1": 800, "y2": 900}}}},
+"p_cmd": {"Dyad": {"placement": {"icon": {"x1": 950, "x2": 1050, "y1": 450, "y2": 550}, "diagram": {"x1": 950, "x2": 1050, "y1": 450, "y2": 550}}}},
+"pressure": {"Dyad": {"placement": {"diagram": {"x1": 400, "x2": 600, "y1": 400, "y2": 600}}}},
+"id1": {"Dyad": {"edges": [{"S": 1, "M": [{"x": 200, "y": 850}, {"x": 200, "y": 450}], "E": 2}]}},
+"id2": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}]}}
+}
+}
+end
