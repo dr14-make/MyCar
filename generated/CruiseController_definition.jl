@@ -5,7 +5,7 @@
 
 
 @doc Markdown.doc"""
-   CruiseController(; name, k, Ti, x0i)
+   CruiseController(; name, k, Ti, x0i, __overrides)
 
 short CruiseController component description
 
@@ -23,7 +23,7 @@ short CruiseController component description
  * `u_m` - This connector represents a real signal as an input to a component ([`RealInput`](@ref))
  * `y` - This connector represents a real signal as an output from a component ([`RealOutput`](@ref))
 """
-@component function CruiseController(; name = nothing, k=Float64(56), Ti=Float64(10), x0i=Float64(0), kwargs...)
+@component function CruiseController(; name = nothing, var"k"=Float64(56), var"Ti"=Float64(10), var"x0i"=Float64(0), __overrides = Dict{String, Any}())
   isnothing(name) && throw(ArgumentError("""
     The `name` keyword must be provided. Please consider using the `@named` macro,
     like so:
@@ -31,7 +31,7 @@ short CruiseController component description
     @named model = CruiseController()
   """))
 
-  __overrides = __build_overrides(kwargs)
+  __overrides = Dict{String, Any}(__overrides)
   __params = Symbolics.SymbolicT[]
   __vars = Symbolics.SymbolicT[]
   __systems = System[]
@@ -40,6 +40,11 @@ short CruiseController component description
   __initialization_eqs = Equation[]
   __eqs = Equation[]
   __bindings = Dict{Symbolics.SymbolicT, Symbolics.SymbolicT}()
+
+  ### Keyword argument overrides
+  haskey(__overrides, "k") && (k = pop!(__overrides, "k"))
+  haskey(__overrides, "Ti") && (Ti = pop!(__overrides, "Ti"))
+  haskey(__overrides, "x0i") && (x0i = pop!(__overrides, "x0i"))
 
   ### Structural Parameters (functions)
 
@@ -56,13 +61,13 @@ short CruiseController component description
   ### Symbolic Parameters
   __local__k = k
   append!(__params, @parameters (k::Real), [description = "Proportional gain"])
-  __initial_conditions[k] = __local__k
+  __dyad_seed_parameter!(__initial_conditions, __bindings, k, __local__k)
   __local__Ti = Ti
   append!(__params, @parameters (Ti::Real))
-  __initial_conditions[Ti] = __local__Ti
+  __dyad_seed_parameter!(__initial_conditions, __bindings, Ti, __local__Ti)
   __local__x0i = x0i
   append!(__params, @parameters (x0i::Real))
-  __initial_conditions[x0i] = __local__x0i
+  __dyad_seed_parameter!(__initial_conditions, __bindings, x0i, __local__x0i)
 
   ### Final Parameters (assignments)
 
@@ -81,22 +86,22 @@ short CruiseController component description
   ### Components
   # Subcomponent error of type BlockComponents.Math.Add
   error_overrides = __pop_subcomponent_overrides!(__overrides, "error")
-  push!(__systems, @named error = BlockComponents.Math.Add(; k2=-1.0, error_overrides...))
+  push!(__systems, @named error = BlockComponents.Math.Add(; k2=-1.0, __overrides = error_overrides))
   # Subcomponent gain of type BlockComponents.Math.Gain
   gain_overrides = __pop_subcomponent_overrides!(__overrides, "gain")
-  push!(__systems, @named gain = BlockComponents.Math.Gain(; k=k, gain_overrides...))
+  push!(__systems, @named gain = BlockComponents.Math.Gain(; k=k, __overrides = gain_overrides))
   # Subcomponent add_pid of type BlockComponents.Math.Add3
   add_pid_overrides = __pop_subcomponent_overrides!(__overrides, "add_pid")
-  push!(__systems, @named add_pid = BlockComponents.Math.Add3(; add_pid_overrides...))
+  push!(__systems, @named add_pid = BlockComponents.Math.Add3(; __overrides = add_pid_overrides))
   # Subcomponent integrator of type BlockComponents.Continuous.Integrator
   integrator_overrides = __pop_subcomponent_overrides!(__overrides, "integrator")
-  push!(__systems, @named integrator = BlockComponents.Continuous.Integrator(; x0=x0i, k=1.0 / Ti, integrator_overrides...))
+  push!(__systems, @named integrator = BlockComponents.Continuous.Integrator(; x0=x0i, k=1.0 / Ti, __overrides = integrator_overrides))
   # Subcomponent constant1 of type BlockComponents.Sources.Constant
   constant1_overrides = __pop_subcomponent_overrides!(__overrides, "constant1")
-  push!(__systems, @named constant1 = BlockComponents.Sources.Constant(; k=Float64(0), constant1_overrides...))
+  push!(__systems, @named constant1 = BlockComponents.Sources.Constant(; k=Float64(0), __overrides = constant1_overrides))
 
   ### Check there are no unmatched overrides
-  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded."))
+  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded. Override keys are dotted paths as written in Dyad source (e.g. inner.rate)."))
 
   ### Guesses
 
@@ -116,6 +121,6 @@ short CruiseController component description
   push!(__eqs, connect(constant1.y, add_pid.u3))
 
   # Return completely constructed System
-  return System(__eqs, t, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
+  return System(__eqs, ModelingToolkit.t_nounits, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
 end
 export CruiseController

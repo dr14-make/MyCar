@@ -5,7 +5,7 @@
 
 
 @doc Markdown.doc"""
-   SlipCar(; name, theta_e, T_max, i, J_w, r, m, CdA, g)
+   SlipCar(; name, theta_e, T_max, i, J_w, r, m, CdA, g, __overrides)
 
 The car with a slipping wheel and a road gradient. Body speed and wheel surface speed are both
 reported in km/h, so wheelspin shows as the gap between them.
@@ -31,7 +31,7 @@ reported in km/h, so wheelspin shows as the gap between them.
  * `v_kmh` - This connector represents a real signal as an output from a component ([`RealOutput`](@ref))
  * `wheel_kmh` - This connector represents a real signal as an output from a component ([`RealOutput`](@ref))
 """
-@component function SlipCar(; name = nothing, theta_e=0.3, T_max=Float64(150), i=Float64(4.0), J_w=Float64(1.0), r=0.31, m=Float64(1400), CdA=0.63, g=9.80665, kwargs...)
+@component function SlipCar(; name = nothing, var"theta_e"=0.3, var"T_max"=Float64(150), var"i"=Float64(4.0), var"J_w"=Float64(1.0), var"r"=0.31, var"m"=Float64(1400), var"CdA"=0.63, var"g"=9.80665, __overrides = Dict{String, Any}())
   isnothing(name) && throw(ArgumentError("""
     The `name` keyword must be provided. Please consider using the `@named` macro,
     like so:
@@ -39,7 +39,7 @@ reported in km/h, so wheelspin shows as the gap between them.
     @named model = SlipCar()
   """))
 
-  __overrides = __build_overrides(kwargs)
+  __overrides = Dict{String, Any}(__overrides)
   __params = Symbolics.SymbolicT[]
   __vars = Symbolics.SymbolicT[]
   __systems = System[]
@@ -48,6 +48,16 @@ reported in km/h, so wheelspin shows as the gap between them.
   __initialization_eqs = Equation[]
   __eqs = Equation[]
   __bindings = Dict{Symbolics.SymbolicT, Symbolics.SymbolicT}()
+
+  ### Keyword argument overrides
+  haskey(__overrides, "theta_e") && (theta_e = pop!(__overrides, "theta_e"))
+  haskey(__overrides, "T_max") && (T_max = pop!(__overrides, "T_max"))
+  haskey(__overrides, "i") && (i = pop!(__overrides, "i"))
+  haskey(__overrides, "J_w") && (J_w = pop!(__overrides, "J_w"))
+  haskey(__overrides, "r") && (r = pop!(__overrides, "r"))
+  haskey(__overrides, "m") && (m = pop!(__overrides, "m"))
+  haskey(__overrides, "CdA") && (CdA = pop!(__overrides, "CdA"))
+  haskey(__overrides, "g") && (g = pop!(__overrides, "g"))
 
   ### Structural Parameters (functions)
 
@@ -64,25 +74,25 @@ reported in km/h, so wheelspin shows as the gap between them.
   ### Symbolic Parameters
   __local__T_max = T_max
   append!(__params, @parameters (T_max::Real), [description = "Peak deliverable torque"])
-  __initial_conditions[T_max] = __local__T_max
+  __dyad_seed_parameter!(__initial_conditions, __bindings, T_max, __local__T_max)
   __local__i = i
   append!(__params, @parameters (i::Real), [description = "Gear ratio"])
-  __initial_conditions[i] = __local__i
+  __dyad_seed_parameter!(__initial_conditions, __bindings, i, __local__i)
   __local__J_w = J_w
   append!(__params, @parameters (J_w::Real), [description = "Road wheel and tire inertia"])
-  __initial_conditions[J_w] = __local__J_w
+  __dyad_seed_parameter!(__initial_conditions, __bindings, J_w, __local__J_w)
   __local__r = r
   append!(__params, @parameters (r::Real), [description = "Wheel rolling radius, shared by the tire and the wheel-speed gain"])
-  __initial_conditions[r] = __local__r
+  __dyad_seed_parameter!(__initial_conditions, __bindings, r, __local__r)
   __local__m = m
   append!(__params, @parameters (m::Real), [description = "Vehicle mass; the driven axle carries half of it", bounds = (0, Inf)])
-  __initial_conditions[m] = __local__m
+  __dyad_seed_parameter!(__initial_conditions, __bindings, m, __local__m)
   __local__CdA = CdA
   append!(__params, @parameters (CdA::Real), [description = "Aerodynamic drag area, Cd * A"])
-  __initial_conditions[CdA] = __local__CdA
+  __dyad_seed_parameter!(__initial_conditions, __bindings, CdA, __local__CdA)
   __local__g = g
   append!(__params, @parameters (g::Real), [description = "Gravitational acceleration"])
-  __initial_conditions[g] = __local__g
+  __dyad_seed_parameter!(__initial_conditions, __bindings, g, __local__g)
 
   ### Final Parameters (assignments)
 
@@ -103,37 +113,37 @@ reported in km/h, so wheelspin shows as the gap between them.
   ### Components
   # Subcomponent engine of type MyCar.Engine
   engine_overrides = __pop_subcomponent_overrides!(__overrides, "engine")
-  push!(__systems, @named engine = MyCar.Engine(; theta_e=theta_e, T_max=T_max, engine_overrides...))
+  push!(__systems, @named engine = MyCar.Engine(; theta_e=theta_e, T_max=T_max, __overrides = engine_overrides))
   # Subcomponent gear of type RotationalComponents.Components.IdealGear
   gear_overrides = __pop_subcomponent_overrides!(__overrides, "gear")
-  push!(__systems, @named gear = RotationalComponents.Components.IdealGear(; ratio=i, gear_overrides...))
+  push!(__systems, @named gear = RotationalComponents.Components.IdealGear(; ratio=i, __overrides = gear_overrides))
   # Subcomponent wheel_inertia of type RotationalComponents.Components.Inertia
   wheel_inertia_overrides = __pop_subcomponent_overrides!(__overrides, "wheel_inertia")
-  push!(__systems, @named wheel_inertia = RotationalComponents.Components.Inertia(; J=J_w, wheel_inertia_overrides...))
+  push!(__systems, @named wheel_inertia = RotationalComponents.Components.Inertia(; J=J_w, __overrides = wheel_inertia_overrides))
   # Subcomponent wheel of type MyCar.SlipWheel1D
   wheel_overrides = __pop_subcomponent_overrides!(__overrides, "wheel")
-  push!(__systems, @named wheel = MyCar.SlipWheel1D(; radius=r, F_z=m * g / 2, wheel_overrides...))
+  push!(__systems, @named wheel = MyCar.SlipWheel1D(; radius=r, F_z=m * g / 2, __overrides = wheel_overrides))
   # Subcomponent body of type MyCar.GradeBody
   body_overrides = __pop_subcomponent_overrides!(__overrides, "body")
-  push!(__systems, @named body = MyCar.GradeBody(; m=m, CdA=CdA, g=g, body_overrides...))
+  push!(__systems, @named body = MyCar.GradeBody(; m=m, CdA=CdA, g=g, __overrides = body_overrides))
   # Subcomponent vsensor of type TranslationalComponents.Sensors.VelocitySensor
   vsensor_overrides = __pop_subcomponent_overrides!(__overrides, "vsensor")
-  push!(__systems, @named vsensor = TranslationalComponents.Sensors.VelocitySensor(; vsensor_overrides...))
+  push!(__systems, @named vsensor = TranslationalComponents.Sensors.VelocitySensor(; __overrides = vsensor_overrides))
   # Subcomponent to_kmh of type BlockComponents.Math.Gain
   to_kmh_overrides = __pop_subcomponent_overrides!(__overrides, "to_kmh")
-  push!(__systems, @named to_kmh = BlockComponents.Math.Gain(; k=3.6, to_kmh_overrides...))
+  push!(__systems, @named to_kmh = BlockComponents.Math.Gain(; k=3.6, __overrides = to_kmh_overrides))
   # Subcomponent wsensor of type RotationalComponents.Sensors.VelocitySensor
   wsensor_overrides = __pop_subcomponent_overrides!(__overrides, "wsensor")
-  push!(__systems, @named wsensor = RotationalComponents.Sensors.VelocitySensor(; wsensor_overrides...))
+  push!(__systems, @named wsensor = RotationalComponents.Sensors.VelocitySensor(; __overrides = wsensor_overrides))
   # Subcomponent wheel_to_kmh of type BlockComponents.Math.Gain
   wheel_to_kmh_overrides = __pop_subcomponent_overrides!(__overrides, "wheel_to_kmh")
-  push!(__systems, @named wheel_to_kmh = BlockComponents.Math.Gain(; k=r * 3.6, wheel_to_kmh_overrides...))
+  push!(__systems, @named wheel_to_kmh = BlockComponents.Math.Gain(; k=r * 3.6, __overrides = wheel_to_kmh_overrides))
   # Subcomponent rot_ground of type RotationalComponents.Components.Fixed
   rot_ground_overrides = __pop_subcomponent_overrides!(__overrides, "rot_ground")
-  push!(__systems, @named rot_ground = RotationalComponents.Components.Fixed(; rot_ground_overrides...))
+  push!(__systems, @named rot_ground = RotationalComponents.Components.Fixed(; __overrides = rot_ground_overrides))
 
   ### Check there are no unmatched overrides
-  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded."))
+  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded. Override keys are dotted paths as written in Dyad source (e.g. inner.rate)."))
 
   ### Guesses
 
@@ -160,6 +170,6 @@ reported in km/h, so wheelspin shows as the gap between them.
   push!(__eqs, connect(wheel_to_kmh.y, wheel_kmh))
 
   # Return completely constructed System
-  return System(__eqs, t, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
+  return System(__eqs, ModelingToolkit.t_nounits, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
 end
 export SlipCar

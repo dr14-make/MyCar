@@ -5,6 +5,7 @@ authors = [" <>"]
 
 [deps]
 BlockComponents = "1ef5d832-be8e-447f-9f2c-8b5d17d15fd3"
+DyadData = "cab12561-e36c-4498-ae70-c9a5e79fef2a"
 DyadInterface = "99806f68-afab-45ca-9d8c-ceff6bc61f54"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 Markdown = "d6f4376e-aef5-505a-96c1-9c027394607a"
@@ -16,20 +17,23 @@ Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 RotationalComponents = "824fa3ed-d7dc-4365-8bdf-ac77a1ac2011"
 RuntimeGeneratedFunctions = "7e49a35a-f44a-4d26-94aa-eba1b4ca6b47"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+ThermalComponents = "084a29d9-4f48-4925-95b4-b7d4c79725f4"
 TranslationalComponents = "42acc370-819b-4877-bdd6-eb3294461f5d"
 
 [compat]
-BlockComponents = "4.6.0"
+BlockComponents = "=5.0.0"
+DyadData = "2.3.0"
 JSON = "0.21, 1"
 Markdown = "1"
 Plots = "1.41.7"
 Revise = "3.17.2"
-RotationalComponents = "2.5.5"
+RotationalComponents = "=3.0.0"
 TOML = "1"
-TranslationalComponents = "2.5.1"
+ThermalComponents = "3.0.0"
+TranslationalComponents = "=3.0.0"
 
 [dyad]
-kernel = "3.4.0"
+kernel = "3.5.1"
 
 [extras]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"

@@ -15,7 +15,7 @@ __dyad_run_test_case!(
   abstol=1e-6,
   reltol=1e-6,
   solver=ODEAlg.Auto(),
-  params=(;),
+  params=Dict{String, Any}(),
   initial_conditions=Tuple[],
   expected_initial=Tuple[
     (m -> m.body.mass.a, "body.mass.a", 0.35714285714285715, 0.001, 1e-5),

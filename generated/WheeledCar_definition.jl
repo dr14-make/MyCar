@@ -5,7 +5,7 @@
 
 
 @doc Markdown.doc"""
-   WheeledCar(; name, theta_e, T_max, m, CdA, J_w)
+   WheeledCar(; name, theta_e, T_max, m, CdA, J_w, __overrides)
 
 The car of step 5 with a wheel that has inertia.
 
@@ -24,7 +24,7 @@ The car of step 5 with a wheel that has inertia.
  * `tau_cmd` - This connector represents a real signal as an input to a component ([`RealInput`](@ref))
  * `v_kmh` - This connector represents a real signal as an output from a component ([`RealOutput`](@ref))
 """
-@component function WheeledCar(; name = nothing, theta_e=0.3, T_max=Float64(150), m=Float64(1400), CdA=0.63, J_w=Float64(1.0), kwargs...)
+@component function WheeledCar(; name = nothing, var"theta_e"=0.3, var"T_max"=Float64(150), var"m"=Float64(1400), var"CdA"=0.63, var"J_w"=Float64(1.0), __overrides = Dict{String, Any}())
   isnothing(name) && throw(ArgumentError("""
     The `name` keyword must be provided. Please consider using the `@named` macro,
     like so:
@@ -32,7 +32,7 @@ The car of step 5 with a wheel that has inertia.
     @named model = WheeledCar()
   """))
 
-  __overrides = __build_overrides(kwargs)
+  __overrides = Dict{String, Any}(__overrides)
   __params = Symbolics.SymbolicT[]
   __vars = Symbolics.SymbolicT[]
   __systems = System[]
@@ -41,6 +41,13 @@ The car of step 5 with a wheel that has inertia.
   __initialization_eqs = Equation[]
   __eqs = Equation[]
   __bindings = Dict{Symbolics.SymbolicT, Symbolics.SymbolicT}()
+
+  ### Keyword argument overrides
+  haskey(__overrides, "theta_e") && (theta_e = pop!(__overrides, "theta_e"))
+  haskey(__overrides, "T_max") && (T_max = pop!(__overrides, "T_max"))
+  haskey(__overrides, "m") && (m = pop!(__overrides, "m"))
+  haskey(__overrides, "CdA") && (CdA = pop!(__overrides, "CdA"))
+  haskey(__overrides, "J_w") && (J_w = pop!(__overrides, "J_w"))
 
   ### Structural Parameters (functions)
 
@@ -57,16 +64,16 @@ The car of step 5 with a wheel that has inertia.
   ### Symbolic Parameters
   __local__T_max = T_max
   append!(__params, @parameters (T_max::Real), [description = "Peak deliverable torque"])
-  __initial_conditions[T_max] = __local__T_max
+  __dyad_seed_parameter!(__initial_conditions, __bindings, T_max, __local__T_max)
   __local__m = m
   append!(__params, @parameters (m::Real), [description = "Vehicle mass", bounds = (0, Inf)])
-  __initial_conditions[m] = __local__m
+  __dyad_seed_parameter!(__initial_conditions, __bindings, m, __local__m)
   __local__CdA = CdA
   append!(__params, @parameters (CdA::Real), [description = "Aerodynamic drag area, Cd * A"])
-  __initial_conditions[CdA] = __local__CdA
+  __dyad_seed_parameter!(__initial_conditions, __bindings, CdA, __local__CdA)
   __local__J_w = J_w
   append!(__params, @parameters (J_w::Real), [description = "Road wheel and tire inertia"])
-  __initial_conditions[J_w] = __local__J_w
+  __dyad_seed_parameter!(__initial_conditions, __bindings, J_w, __local__J_w)
 
   ### Final Parameters (assignments)
 
@@ -84,28 +91,28 @@ The car of step 5 with a wheel that has inertia.
   ### Components
   # Subcomponent engine of type MyCar.Engine
   engine_overrides = __pop_subcomponent_overrides!(__overrides, "engine")
-  push!(__systems, @named engine = MyCar.Engine(; theta_e=theta_e, T_max=T_max, engine_overrides...))
+  push!(__systems, @named engine = MyCar.Engine(; theta_e=theta_e, T_max=T_max, __overrides = engine_overrides))
   # Subcomponent driveline of type MyCar.WheeledDriveline
   driveline_overrides = __pop_subcomponent_overrides!(__overrides, "driveline")
-  push!(__systems, @named driveline = MyCar.WheeledDriveline(; J_w=J_w, driveline_overrides...))
+  push!(__systems, @named driveline = MyCar.WheeledDriveline(; J_w=J_w, __overrides = driveline_overrides))
   # Subcomponent body of type MyCar.Body
   body_overrides = __pop_subcomponent_overrides!(__overrides, "body")
-  push!(__systems, @named body = MyCar.Body(; m=m, CdA=CdA, body_overrides...))
+  push!(__systems, @named body = MyCar.Body(; m=m, CdA=CdA, __overrides = body_overrides))
   # Subcomponent vsensor of type TranslationalComponents.Sensors.VelocitySensor
   vsensor_overrides = __pop_subcomponent_overrides!(__overrides, "vsensor")
-  push!(__systems, @named vsensor = TranslationalComponents.Sensors.VelocitySensor(; vsensor_overrides...))
+  push!(__systems, @named vsensor = TranslationalComponents.Sensors.VelocitySensor(; __overrides = vsensor_overrides))
   # Subcomponent to_kmh of type BlockComponents.Math.Gain
   to_kmh_overrides = __pop_subcomponent_overrides!(__overrides, "to_kmh")
-  push!(__systems, @named to_kmh = BlockComponents.Math.Gain(; k=3.6, to_kmh_overrides...))
+  push!(__systems, @named to_kmh = BlockComponents.Math.Gain(; k=3.6, __overrides = to_kmh_overrides))
   # Subcomponent rot_ground of type RotationalComponents.Components.Fixed
   rot_ground_overrides = __pop_subcomponent_overrides!(__overrides, "rot_ground")
-  push!(__systems, @named rot_ground = RotationalComponents.Components.Fixed(; rot_ground_overrides...))
+  push!(__systems, @named rot_ground = RotationalComponents.Components.Fixed(; __overrides = rot_ground_overrides))
   # Subcomponent trans_ground of type TranslationalComponents.Components.Fixed
   trans_ground_overrides = __pop_subcomponent_overrides!(__overrides, "trans_ground")
-  push!(__systems, @named trans_ground = TranslationalComponents.Components.Fixed(; trans_ground_overrides...))
+  push!(__systems, @named trans_ground = TranslationalComponents.Components.Fixed(; __overrides = trans_ground_overrides))
 
   ### Check there are no unmatched overrides
-  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded."))
+  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded. Override keys are dotted paths as written in Dyad source (e.g. inner.rate)."))
 
   ### Guesses
 
@@ -126,6 +133,6 @@ The car of step 5 with a wheel that has inertia.
   push!(__eqs, connect(to_kmh.y, v_kmh))
 
   # Return completely constructed System
-  return System(__eqs, t, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
+  return System(__eqs, ModelingToolkit.t_nounits, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
 end
 export WheeledCar

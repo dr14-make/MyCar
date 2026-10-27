@@ -15,7 +15,7 @@ __dyad_run_test_case!(
   abstol=1e-6,
   reltol=1e-6,
   solver=ODEAlg.Auto(),
-  params=(; road__k=0),
+  params=Dict{String, Any}("road.k" => 0),
   initial_conditions=Tuple[(m -> m.body.mass.v, 0)],
   expected_initial=Tuple[
     (m -> m.body.mass.a, "body.mass.a", 0.35714285714285715, 0.001, 1e-5),
@@ -38,7 +38,7 @@ __dyad_run_test_case!(
   abstol=1e-6,
   reltol=1e-6,
   solver=ODEAlg.Auto(),
-  params=(; road__k=0.02),
+  params=Dict{String, Any}("road.k" => 0.02),
   initial_conditions=Tuple[(m -> m.body.mass.v, 10)],
   expected_initial=Tuple[
     (m -> m.body.mass.a, "body.mass.a", 0.0163928, 0.001, 1e-5),

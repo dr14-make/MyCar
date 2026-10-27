@@ -5,7 +5,7 @@
 
 
 @doc Markdown.doc"""
-   Driveline(; name, i, r)
+   Driveline(; name, i, r, __overrides)
 
 Gearbox and rolling wheel: engine shaft in, tractive force on the body out.
 
@@ -23,7 +23,7 @@ Gearbox and rolling wheel: engine shaft in, tractive force on the body out.
  * `flange` - This connector represents a mechanical flange with position and force as the potential and flow variables, respectively. ([`Flange`](@ref))
  * `support_t` - This connector represents a mechanical flange with position and force as the potential and flow variables, respectively. ([`Flange`](@ref))
 """
-@component function Driveline(; name = nothing, i=Float64(4.0), r=0.31, kwargs...)
+@component function Driveline(; name = nothing, var"i"=Float64(4.0), var"r"=0.31, __overrides = Dict{String, Any}())
   isnothing(name) && throw(ArgumentError("""
     The `name` keyword must be provided. Please consider using the `@named` macro,
     like so:
@@ -31,7 +31,7 @@ Gearbox and rolling wheel: engine shaft in, tractive force on the body out.
     @named model = Driveline()
   """))
 
-  __overrides = __build_overrides(kwargs)
+  __overrides = Dict{String, Any}(__overrides)
   __params = Symbolics.SymbolicT[]
   __vars = Symbolics.SymbolicT[]
   __systems = System[]
@@ -40,6 +40,10 @@ Gearbox and rolling wheel: engine shaft in, tractive force on the body out.
   __initialization_eqs = Equation[]
   __eqs = Equation[]
   __bindings = Dict{Symbolics.SymbolicT, Symbolics.SymbolicT}()
+
+  ### Keyword argument overrides
+  haskey(__overrides, "i") && (i = pop!(__overrides, "i"))
+  haskey(__overrides, "r") && (r = pop!(__overrides, "r"))
 
   ### Structural Parameters (functions)
 
@@ -56,10 +60,10 @@ Gearbox and rolling wheel: engine shaft in, tractive force on the body out.
   ### Symbolic Parameters
   __local__i = i
   append!(__params, @parameters (i::Real), [description = "Gear ratio"])
-  __initial_conditions[i] = __local__i
+  __dyad_seed_parameter!(__initial_conditions, __bindings, i, __local__i)
   __local__r = r
   append!(__params, @parameters (r::Real), [description = "Wheel rolling radius"])
-  __initial_conditions[r] = __local__r
+  __dyad_seed_parameter!(__initial_conditions, __bindings, r, __local__r)
 
   ### Final Parameters (assignments)
 
@@ -79,13 +83,13 @@ Gearbox and rolling wheel: engine shaft in, tractive force on the body out.
   push!(__systems, @named support_t = __Dyad__Flange())
   # Subcomponent gear of type RotationalComponents.Components.IdealGear
   gear_overrides = __pop_subcomponent_overrides!(__overrides, "gear")
-  push!(__systems, @named gear = RotationalComponents.Components.IdealGear(; ratio=i, gear_overrides...))
+  push!(__systems, @named gear = RotationalComponents.Components.IdealGear(; ratio=i, __overrides = gear_overrides))
   # Subcomponent wheel of type RotationalComponents.Components.IdealRollingWheel
   wheel_overrides = __pop_subcomponent_overrides!(__overrides, "wheel")
-  push!(__systems, @named wheel = RotationalComponents.Components.IdealRollingWheel(; radius=r, wheel_overrides...))
+  push!(__systems, @named wheel = RotationalComponents.Components.IdealRollingWheel(; radius=r, __overrides = wheel_overrides))
 
   ### Check there are no unmatched overrides
-  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded."))
+  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded. Override keys are dotted paths as written in Dyad source (e.g. inner.rate)."))
 
   ### Guesses
 
@@ -103,6 +107,6 @@ Gearbox and rolling wheel: engine shaft in, tractive force on the body out.
   push!(__eqs, connect(wheel.support_t, support_t))
 
   # Return completely constructed System
-  return System(__eqs, t, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
+  return System(__eqs, ModelingToolkit.t_nounits, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
 end
 export Driveline

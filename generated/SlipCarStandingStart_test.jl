@@ -15,7 +15,7 @@ __dyad_run_test_case!(
   abstol=1e-6,
   reltol=1e-6,
   solver=ODEAlg.Auto(),
-  params=(; friction__k=0.2),
+  params=Dict{String, Any}("friction.k" => 0.2),
   initial_conditions=Tuple[],
   expected_initial=Tuple[
     (m -> m.car.v_kmh, "car.v_kmh", 0, 0.1, 1e-5),
@@ -41,7 +41,7 @@ __dyad_run_test_case!(
   abstol=1e-6,
   reltol=1e-6,
   solver=ODEAlg.Auto(),
-  params=(; friction__k=1),
+  params=Dict{String, Any}("friction.k" => 1.0),
   initial_conditions=Tuple[],
   expected_initial=Tuple[
     (m -> m.car.v_kmh, "car.v_kmh", 0, 0.1, 1e-5),

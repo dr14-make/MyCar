@@ -5,7 +5,7 @@
 
 
 @doc Markdown.doc"""
-   GradeForce(; name, m, g)
+   GradeForce(; name, m, g, __overrides)
 
 The along-slope pull of gravity on the car, from a road-gradient signal.
 
@@ -32,7 +32,7 @@ one signal can drive both.
 | `s`         | Distance between flange and support (= flange.s - support.s)                         | m  |
 | `f`         | Accelerating force acting at flange (= flange.f)                         | N  |
 """
-@component function GradeForce(; name = nothing, m=Float64(1400), g=9.80665, kwargs...)
+@component function GradeForce(; name = nothing, var"m"=Float64(1400), var"g"=9.80665, __overrides = Dict{String, Any}())
   isnothing(name) && throw(ArgumentError("""
     The `name` keyword must be provided. Please consider using the `@named` macro,
     like so:
@@ -40,7 +40,7 @@ one signal can drive both.
     @named model = GradeForce()
   """))
 
-  __overrides = __build_overrides(kwargs)
+  __overrides = Dict{String, Any}(__overrides)
   __params = Symbolics.SymbolicT[]
   __vars = Symbolics.SymbolicT[]
   __systems = System[]
@@ -49,6 +49,10 @@ one signal can drive both.
   __initialization_eqs = Equation[]
   __eqs = Equation[]
   __bindings = Dict{Symbolics.SymbolicT, Symbolics.SymbolicT}()
+
+  ### Keyword argument overrides
+  haskey(__overrides, "m") && (m = pop!(__overrides, "m"))
+  haskey(__overrides, "g") && (g = pop!(__overrides, "g"))
 
   ### Structural Parameters (functions)
 
@@ -65,10 +69,10 @@ one signal can drive both.
   ### Symbolic Parameters
   __local__m = m
   append!(__params, @parameters (m::Real), [description = "Vehicle mass", bounds = (0, Inf)])
-  __initial_conditions[m] = __local__m
+  __dyad_seed_parameter!(__initial_conditions, __bindings, m, __local__m)
   __local__g = g
   append!(__params, @parameters (g::Real), [description = "Gravitational acceleration"])
-  __initial_conditions[g] = __local__g
+  __dyad_seed_parameter!(__initial_conditions, __bindings, g, __local__g)
 
   ### Final Parameters (assignments)
 
@@ -81,11 +85,11 @@ one signal can drive both.
 
   ### Variables (assignments)
   __ovr_s = pop!(__overrides, "s", nothing); isnothing(__ovr_s) || push!(__eqs, s ~ __ovr_s)
-  __ovr_s__initial = pop!(__overrides, "s__initial", nothing); isnothing(__ovr_s__initial) || (__initial_conditions[s] = __ovr_s__initial)
-  __ovr_s__guess = pop!(__overrides, "s__guess", nothing)
+  __ovr_s__initial = pop!(__overrides, "s.initial", nothing); isnothing(__ovr_s__initial) || (__initial_conditions[s] = __ovr_s__initial)
+  __ovr_s__guess = pop!(__overrides, "s.guess", nothing)
   __ovr_f = pop!(__overrides, "f", nothing); isnothing(__ovr_f) || push!(__eqs, f ~ __ovr_f)
-  __ovr_f__initial = pop!(__overrides, "f__initial", nothing); isnothing(__ovr_f__initial) || (__initial_conditions[f] = __ovr_f__initial)
-  __ovr_f__guess = pop!(__overrides, "f__guess", nothing)
+  __ovr_f__initial = pop!(__overrides, "f.initial", nothing); isnothing(__ovr_f__initial) || (__initial_conditions[f] = __ovr_f__initial)
+  __ovr_f__guess = pop!(__overrides, "f.guess", nothing)
 
   ### Constants
   __constants = Any[]
@@ -95,7 +99,7 @@ one signal can drive both.
   push!(__systems, @named support = __Dyad__Flange())
 
   ### Check there are no unmatched overrides
-  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded."))
+  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded. Override keys are dotted paths as written in Dyad source (e.g. inner.rate)."))
 
   ### Guesses
   isnothing(__ovr_s__guess) || (__guesses[s] = __ovr_s__guess)
@@ -113,6 +117,6 @@ one signal can drive both.
   push!(__eqs, f ~ m * g * sin(atan(grade)))
 
   # Return completely constructed System
-  return System(__eqs, t, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
+  return System(__eqs, ModelingToolkit.t_nounits, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
 end
 export GradeForce

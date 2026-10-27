@@ -5,9 +5,9 @@
 
 
 @doc Markdown.doc"""
-   TestSlipWheel1D(; name)
+   TestSlipWheel1D(; name, __overrides)
 """
-@component function TestSlipWheel1D(; name = nothing, kwargs...)
+@component function TestSlipWheel1D(; name = nothing, __overrides = Dict{String, Any}())
   isnothing(name) && throw(ArgumentError("""
     The `name` keyword must be provided. Please consider using the `@named` macro,
     like so:
@@ -15,7 +15,7 @@
     @named model = TestSlipWheel1D()
   """))
 
-  __overrides = __build_overrides(kwargs)
+  __overrides = Dict{String, Any}(__overrides)
   __params = Symbolics.SymbolicT[]
   __vars = Symbolics.SymbolicT[]
   __systems = System[]
@@ -53,25 +53,25 @@
   ### Components
   # Subcomponent torque of type RotationalComponents.Sources.ConstantTorque
   torque_overrides = __pop_subcomponent_overrides!(__overrides, "torque")
-  push!(__systems, @named torque = RotationalComponents.Sources.ConstantTorque(; tau_constant=Float64(600), torque_overrides...))
+  push!(__systems, @named torque = RotationalComponents.Sources.ConstantTorque(; tau_constant=Float64(600), __overrides = torque_overrides))
   # Subcomponent inertia of type RotationalComponents.Components.Inertia
   inertia_overrides = __pop_subcomponent_overrides!(__overrides, "inertia")
-  push!(__systems, @named inertia = RotationalComponents.Components.Inertia(; J=Float64(1), inertia_overrides...))
+  push!(__systems, @named inertia = RotationalComponents.Components.Inertia(; J=Float64(1), __overrides = inertia_overrides))
   # Subcomponent wheel of type MyCar.SlipWheel1D
   wheel_overrides = __pop_subcomponent_overrides!(__overrides, "wheel")
-  push!(__systems, @named wheel = MyCar.SlipWheel1D(; wheel_overrides...))
+  push!(__systems, @named wheel = MyCar.SlipWheel1D(; __overrides = wheel_overrides))
   # Subcomponent mass of type TranslationalComponents.Components.Mass
   mass_overrides = __pop_subcomponent_overrides!(__overrides, "mass")
-  push!(__systems, @named mass = TranslationalComponents.Components.Mass(; m=Float64(1400), mass_overrides...))
+  push!(__systems, @named mass = TranslationalComponents.Components.Mass(; m=Float64(1400), __overrides = mass_overrides))
   # Subcomponent mu_src of type BlockComponents.Sources.Constant
   mu_src_overrides = __pop_subcomponent_overrides!(__overrides, "mu_src")
-  push!(__systems, @named mu_src = BlockComponents.Sources.Constant(; k=0.2, mu_src_overrides...))
+  push!(__systems, @named mu_src = BlockComponents.Sources.Constant(; k=0.2, __overrides = mu_src_overrides))
   # Subcomponent fixed_r of type RotationalComponents.Components.Fixed
   fixed_r_overrides = __pop_subcomponent_overrides!(__overrides, "fixed_r")
-  push!(__systems, @named fixed_r = RotationalComponents.Components.Fixed(; fixed_r_overrides...))
+  push!(__systems, @named fixed_r = RotationalComponents.Components.Fixed(; __overrides = fixed_r_overrides))
 
   ### Check there are no unmatched overrides
-  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded."))
+  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded. Override keys are dotted paths as written in Dyad source (e.g. inner.rate)."))
 
   ### Guesses
 
@@ -92,6 +92,6 @@
   push!(__eqs, connect(mu_src.y, wheel.mu_scale))
 
   # Return completely constructed System
-  return System(__eqs, t, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
+  return System(__eqs, ModelingToolkit.t_nounits, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
 end
 export TestSlipWheel1D

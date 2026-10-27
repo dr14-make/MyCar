@@ -5,11 +5,11 @@
 
 
 @doc Markdown.doc"""
-   CarStepTest(; name)
+   CarStepTest(; name, __overrides)
 
 short CarStepTest component description
 """
-@component function CarStepTest(; name = nothing, kwargs...)
+@component function CarStepTest(; name = nothing, __overrides = Dict{String, Any}())
   isnothing(name) && throw(ArgumentError("""
     The `name` keyword must be provided. Please consider using the `@named` macro,
     like so:
@@ -17,7 +17,7 @@ short CarStepTest component description
     @named model = CarStepTest()
   """))
 
-  __overrides = __build_overrides(kwargs)
+  __overrides = Dict{String, Any}(__overrides)
   __params = Symbolics.SymbolicT[]
   __vars = Symbolics.SymbolicT[]
   __systems = System[]
@@ -55,13 +55,13 @@ short CarStepTest component description
   ### Components
   # Subcomponent cmd of type BlockComponents.Sources.Step
   cmd_overrides = __pop_subcomponent_overrides!(__overrides, "cmd")
-  push!(__systems, @named cmd = BlockComponents.Sources.Step(; offset=31.078, start_time=Float64(50), height=9.041, cmd_overrides...))
+  push!(__systems, @named cmd = BlockComponents.Sources.Step(; offset=31.078, start_time=Float64(50), height=9.041, __overrides = cmd_overrides))
   # Subcomponent plant of type MyCar.Car
   plant_overrides = __pop_subcomponent_overrides!(__overrides, "plant")
-  push!(__systems, @named plant = MyCar.Car(; plant_overrides...))
+  push!(__systems, @named plant = MyCar.Car(; __overrides = plant_overrides))
 
   ### Check there are no unmatched overrides
-  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded."))
+  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded. Override keys are dotted paths as written in Dyad source (e.g. inner.rate)."))
 
   ### Guesses
 
@@ -77,6 +77,6 @@ short CarStepTest component description
   push!(__eqs, connect(cmd.y, plant.tau_cmd))
 
   # Return completely constructed System
-  return System(__eqs, t, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
+  return System(__eqs, ModelingToolkit.t_nounits, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
 end
 export CarStepTest

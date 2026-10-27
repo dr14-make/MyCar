@@ -15,7 +15,7 @@ __dyad_run_test_case!(
   abstol=1e-6,
   reltol=1e-6,
   solver=ODEAlg.Auto(),
-  params=(; mu_src__k=0.2),
+  params=Dict{String, Any}("mu_src.k" => 0.2),
   initial_conditions=Tuple[],
   expected_initial=Tuple[
     (m -> m.wheel.kappa, "wheel.kappa", 0, 0.02, 1e-5),
@@ -42,7 +42,7 @@ __dyad_run_test_case!(
   abstol=1e-6,
   reltol=1e-6,
   solver=ODEAlg.Auto(),
-  params=(; mu_src__k=1),
+  params=Dict{String, Any}("mu_src.k" => 1),
   initial_conditions=Tuple[],
   expected_initial=Tuple[
     (m -> m.wheel.kappa, "wheel.kappa", 0, 0.02, 1e-5),

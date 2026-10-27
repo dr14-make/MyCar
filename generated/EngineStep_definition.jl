@@ -5,11 +5,11 @@
 
 
 @doc Markdown.doc"""
-   EngineStep(; name)
+   EngineStep(; name, __overrides)
 
 A torque command above the ceiling, stepped in at 0.5 s, into a 1 kg·m² flywheel.
 """
-@component function EngineStep(; name = nothing, kwargs...)
+@component function EngineStep(; name = nothing, __overrides = Dict{String, Any}())
   isnothing(name) && throw(ArgumentError("""
     The `name` keyword must be provided. Please consider using the `@named` macro,
     like so:
@@ -17,7 +17,7 @@ A torque command above the ceiling, stepped in at 0.5 s, into a 1 kg·m² flywhe
     @named model = EngineStep()
   """))
 
-  __overrides = __build_overrides(kwargs)
+  __overrides = Dict{String, Any}(__overrides)
   __params = Symbolics.SymbolicT[]
   __vars = Symbolics.SymbolicT[]
   __systems = System[]
@@ -55,19 +55,19 @@ A torque command above the ceiling, stepped in at 0.5 s, into a 1 kg·m² flywhe
   ### Components
   # Subcomponent cmd of type BlockComponents.Sources.Step
   cmd_overrides = __pop_subcomponent_overrides!(__overrides, "cmd")
-  push!(__systems, @named cmd = BlockComponents.Sources.Step(; height=Float64(200), offset=Float64(0), start_time=0.5, cmd_overrides...))
+  push!(__systems, @named cmd = BlockComponents.Sources.Step(; height=Float64(200), offset=Float64(0), start_time=0.5, __overrides = cmd_overrides))
   # Subcomponent engine of type MyCar.Engine
   engine_overrides = __pop_subcomponent_overrides!(__overrides, "engine")
-  push!(__systems, @named engine = MyCar.Engine(; engine_overrides...))
+  push!(__systems, @named engine = MyCar.Engine(; __overrides = engine_overrides))
   # Subcomponent load of type RotationalComponents.Components.Inertia
   load_overrides = __pop_subcomponent_overrides!(__overrides, "load")
-  push!(__systems, @named load = RotationalComponents.Components.Inertia(; J=Float64(1), load_overrides...))
+  push!(__systems, @named load = RotationalComponents.Components.Inertia(; J=Float64(1), __overrides = load_overrides))
   # Subcomponent mounts of type RotationalComponents.Components.Fixed
   mounts_overrides = __pop_subcomponent_overrides!(__overrides, "mounts")
-  push!(__systems, @named mounts = RotationalComponents.Components.Fixed(; mounts_overrides...))
+  push!(__systems, @named mounts = RotationalComponents.Components.Fixed(; __overrides = mounts_overrides))
 
   ### Check there are no unmatched overrides
-  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded."))
+  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded. Override keys are dotted paths as written in Dyad source (e.g. inner.rate)."))
 
   ### Guesses
 
@@ -85,6 +85,6 @@ A torque command above the ceiling, stepped in at 0.5 s, into a 1 kg·m² flywhe
   push!(__eqs, connect(engine.support, mounts.spline))
 
   # Return completely constructed System
-  return System(__eqs, t, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
+  return System(__eqs, ModelingToolkit.t_nounits, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
 end
 export EngineStep

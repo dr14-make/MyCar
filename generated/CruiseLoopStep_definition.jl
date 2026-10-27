@@ -5,7 +5,7 @@
 
 
 @doc Markdown.doc"""
-   CruiseLoopStep(; name, k, Ti, xi0)
+   CruiseLoopStep(; name, k, Ti, xi0, __overrides)
 
 short CruiseLoopStep component description
 
@@ -17,7 +17,7 @@ short CruiseLoopStep component description
 | `Ti`         |                          | --  |   10 |
 | `xi0`         |                          | --  |   0 |
 """
-@component function CruiseLoopStep(; name = nothing, k=Float64(56), Ti=Float64(10), xi0=Float64(0), kwargs...)
+@component function CruiseLoopStep(; name = nothing, var"k"=Float64(56), var"Ti"=Float64(10), var"xi0"=Float64(0), __overrides = Dict{String, Any}())
   isnothing(name) && throw(ArgumentError("""
     The `name` keyword must be provided. Please consider using the `@named` macro,
     like so:
@@ -25,7 +25,7 @@ short CruiseLoopStep component description
     @named model = CruiseLoopStep()
   """))
 
-  __overrides = __build_overrides(kwargs)
+  __overrides = Dict{String, Any}(__overrides)
   __params = Symbolics.SymbolicT[]
   __vars = Symbolics.SymbolicT[]
   __systems = System[]
@@ -34,6 +34,11 @@ short CruiseLoopStep component description
   __initialization_eqs = Equation[]
   __eqs = Equation[]
   __bindings = Dict{Symbolics.SymbolicT, Symbolics.SymbolicT}()
+
+  ### Keyword argument overrides
+  haskey(__overrides, "k") && (k = pop!(__overrides, "k"))
+  haskey(__overrides, "Ti") && (Ti = pop!(__overrides, "Ti"))
+  haskey(__overrides, "xi0") && (xi0 = pop!(__overrides, "xi0"))
 
   ### Structural Parameters (functions)
 
@@ -50,13 +55,13 @@ short CruiseLoopStep component description
   ### Symbolic Parameters
   __local__k = k
   append!(__params, @parameters (k::Real), [description = "Proportional gain"])
-  __initial_conditions[k] = __local__k
+  __dyad_seed_parameter!(__initial_conditions, __bindings, k, __local__k)
   __local__Ti = Ti
   append!(__params, @parameters (Ti::Real))
-  __initial_conditions[Ti] = __local__Ti
+  __dyad_seed_parameter!(__initial_conditions, __bindings, Ti, __local__Ti)
   __local__xi0 = xi0
   append!(__params, @parameters (xi0::Real))
-  __initial_conditions[xi0] = __local__xi0
+  __dyad_seed_parameter!(__initial_conditions, __bindings, xi0, __local__xi0)
 
   ### Final Parameters (assignments)
 
@@ -72,19 +77,19 @@ short CruiseLoopStep component description
   ### Components
   # Subcomponent demand of type BlockComponents.Sources.Step
   demand_overrides = __pop_subcomponent_overrides!(__overrides, "demand")
-  push!(__systems, @named demand = BlockComponents.Sources.Step(; offset=Float64(90), height=Float64(20), demand_overrides...))
+  push!(__systems, @named demand = BlockComponents.Sources.Step(; offset=Float64(90), height=Float64(20), __overrides = demand_overrides))
   # Subcomponent constant1 of type BlockComponents.Sources.Constant
   constant1_overrides = __pop_subcomponent_overrides!(__overrides, "constant1")
-  push!(__systems, @named constant1 = BlockComponents.Sources.Constant(; k=Float64(0.0), constant1_overrides...))
+  push!(__systems, @named constant1 = BlockComponents.Sources.Constant(; k=Float64(0.0), __overrides = constant1_overrides))
   # Subcomponent controller of type MyCar.CruiseController
   controller_overrides = __pop_subcomponent_overrides!(__overrides, "controller")
-  push!(__systems, @named controller = MyCar.CruiseController(; k=k, controller_overrides...))
+  push!(__systems, @named controller = MyCar.CruiseController(; k=k, __overrides = controller_overrides))
   # Subcomponent plant of type MyCar.GradeCar
   plant_overrides = __pop_subcomponent_overrides!(__overrides, "plant")
-  push!(__systems, @named plant = MyCar.GradeCar(; plant_overrides...))
+  push!(__systems, @named plant = MyCar.GradeCar(; __overrides = plant_overrides))
 
   ### Check there are no unmatched overrides
-  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded."))
+  isempty(__overrides) || throw(ArgumentError("overrides: [$(join(keys(__overrides), ", "))] don't match names found in model. These names may exist in the model but could have been conditionally excluded. Override keys are dotted paths as written in Dyad source (e.g. inner.rate)."))
 
   ### Guesses
 
@@ -103,6 +108,6 @@ short CruiseLoopStep component description
   push!(__eqs, connect(demand.y, controller.u_s))
 
   # Return completely constructed System
-  return System(__eqs, t, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
+  return System(__eqs, ModelingToolkit.t_nounits, __vars, __params; systems=__systems, initial_conditions=__initial_conditions, guesses=__guesses, name, initialization_eqs=__initialization_eqs, bindings=__bindings, assertions=__assertions)
 end
 export CruiseLoopStep
