@@ -26,7 +26,7 @@ TranslationalComponents = "42acc370-819b-4877-bdd6-eb3294461f5d"
 VehicleSystemsComponents = "51e0f197-a681-4fed-b1ae-12a69f787746"
 
 [sources]
-VehicleSystemsComponents = {path = "/mnt/enc/worktrees/VehicleSystemsComponents/docs-lecture05-handson-90min"}
+VehicleSystemsComponents = {rev = "lecture-05-dyad-3.5", url = "https://github.com/dr14-make/16ESPD"}
 
 [compat]
 BlockComponents = "=5.0.0"
@@ -43,6 +43,7 @@ RotationalComponents = "=3.0.0"
 TOML = "1"
 ThermalComponents = "3.0.0"
 TranslationalComponents = "=3.0.0"
+VehicleSystemsComponents = "0.1.0"
 
 [dyad]
 kernel = "3.5.1"
