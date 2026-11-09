@@ -7,10 +7,9 @@
 @doc Markdown.doc"""
    Step3HybridWLTC(; name, m, radius, k, Ti, tau_max, tau_brake, dv_wheel, engage_rpm, engage_width_rpm, lock_rpm, lock_width_rpm, N_locked, __overrides)
 
-Hands-on 05 step 3 starter: the hybrid fixture with the energy manager reading its measurements but
-commanding nothing yet, start/stop off and no torque-to-pedal map. Placing TorqueToPedal as
-`map`, wiring the manager's commands as the guide lists and setting `start_stop = true`
-completes it to VehicleSystemsComponents.Lecture5.P2HybridWLTC.
+Hands-on 05 step 3: the P2 hybrid, matching VehicleSystemsComponents.Lecture5.P2HybridWLTC. The
+energy manager commands K0, engine start/stop and the machine; the TorqueToPedal block `map`
+turns its engine torque request into a pedal.
 
 ## Parameters:
 

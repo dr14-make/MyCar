@@ -7,10 +7,10 @@
 @doc Markdown.doc"""
    Step2OperatingLineWLTC(; name, m, radius, k, Ti, tau_max, dv_wheel, engage_rpm, engage_width_rpm, tau_brake, brake_gain, lock_rpm, lock_width_rpm, P_peak, N_locked, __overrides)
 
-Hands-on 05 step 2 starter: the operating-line fixture without its line, with the powertrain still
-pedal-commanded. Placing OperatingLine as `line`, wiring the zero command to the two ignored
-inputs, setting `speed_commanded = true` and adding the three line equations the guide lists
-completes it to VehicleSystemsComponents.Lecture5.P2OperatingLineWLTC.
+Hands-on 05 step 2: the operating-line car, matching
+VehicleSystemsComponents.Lecture5.P2OperatingLineWLTC. The OperatingLine block `line` turns the
+driver's power request into a commanded transmission input speed, and the speed-commanded
+powertrain follows it, holding the engine on its best-BSFC line.
 
 ## Parameters:
 

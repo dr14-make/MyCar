@@ -1,6 +1,6 @@
 """
-Hands-on 05 step 1 starter: the P2WLTC fixture with the library P2Powertrain placed but unwired.
-Wiring the powertrain's seven command and shaft ports as the guide lists completes it to
+Hands-on 05 step 1: the P2WLTC fixture with the library P2Powertrain wired to the driver's pedal
+command, the zero commands, the differential, the mount and the fuel meter, matching
 VehicleSystemsComponents.Lecture5.P2WLTC; `electric` stays false for the engine-only H0 baseline.
 """
 test component Step1EngineWLTC
@@ -234,7 +234,7 @@ metadata {
 }
 end
 
-"Engine-only full WLTC on the step 1 starter (derived; VehicleSystemsComponents.Lecture5.P2EngineWLTCTransient)."
+"Engine-only full WLTC on the step 1 car (derived; VehicleSystemsComponents.Lecture5.P2EngineWLTCTransient)."
 analysis Step1EngineWLTCTransient
   extends TransientAnalysis(stop = 1800.0, alg = ODEAlg.Rodas5P(), dtmax = 1.0, optimize = OptimizationLevel.None())
   model = Step1EngineWLTC()

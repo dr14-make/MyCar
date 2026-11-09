@@ -151,8 +151,8 @@ export Step1EngineWLTCTransient__System
   var"specialization"::SpecializationLevel.Type = SpecializationLevel.Despecialize()
   var"verbose"::DEVerbosity.Type = DEVerbosity.Standard()
   var"log_file"::String = ""
-  # Hands-on 05 step 1 starter: the P2WLTC fixture with the library P2Powertrain placed but unwired.
-  # Wiring the powertrain's seven command and shaft ports as the guide lists completes it to
+  # Hands-on 05 step 1: the P2WLTC fixture with the library P2Powertrain wired to the driver's pedal
+  # command, the zero commands, the differential, the mount and the fuel meter, matching
   # VehicleSystemsComponents.Lecture5.P2WLTC; `electric` stays false for the engine-only H0 baseline.
   var"model"::Union{Nothing, System} = MyCar.Step1EngineWLTC(; name=:Step1EngineWLTC)
   __system::System = Step1EngineWLTCTransient__System(; name, var"alg"=var"alg", var"start"=var"start", var"stop"=var"stop", var"abstol"=var"abstol", var"reltol"=var"reltol", var"saveat"=var"saveat", var"dtmax"=var"dtmax", var"tstops"=var"tstops", var"automatic_discontinuity_detection"=var"automatic_discontinuity_detection", var"optimize"=var"optimize", var"progress"=var"progress", var"respecialize"=var"respecialize", var"specialization"=var"specialization", var"verbose"=var"verbose", var"log_file"=var"log_file")
