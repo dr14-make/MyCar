@@ -1,0 +1,224 @@
+"""
+Hands-on 05 step 2: the operating-line car, matching
+VehicleSystemsComponents.Lecture5.P2OperatingLineWLTC. The OperatingLine block `line` turns the
+driver's power request into a commanded transmission input speed, and the speed-commanded
+powertrain follows it, holding the engine on its best-BSFC line.
+"""
+test component Step2OperatingLineWLTC
+  "Vehicle and road-load mass (assumed; shared planar benchmark)"
+  parameter m::Mass = 1500.0
+  "Wheel radius (derived; planar benchmark)"
+  parameter radius::Length = 0.31
+  "PI gain [N.m per km/h], shared with H0"
+  parameter k::Real = 110.0
+  "PI integral time (assumed; shared Lecture 5 driver)"
+  parameter Ti::Time = 1.0
+  "Positive PI ceiling [N.m], pedal saturation"
+  parameter tau_max::Torque = 150.0
+  "Initial wheel surface speed offset (assumed; MultibodyComponents #185)"
+  parameter dv_wheel::Velocity = 0.01
+  "Center of K0 launch engagement [rpm] (assumed; CentrifugalClutch)"
+  parameter engage_rpm::Real = 1300.0
+  "Width of K0 launch engagement [rpm] (assumed; CentrifugalClutch)"
+  parameter engage_width_rpm::Real(min = eps(Float64)) = 120.0
+  "Negative PI limit [N.m], independent of propulsion saturation"
+  parameter tau_brake::Torque = 205.0
+  "Total wheel brake torque per negative driver N.m, launch ratio reference"
+  parameter brake_gain::Real = 12.0
+  "Center of machine-side K0 lock-up ramp [rpm]; open at 800 rpm idle, closed by 880 rpm"
+  parameter lock_rpm::Real = 840.0
+  "Width of machine-side K0 lock-up ramp [rpm]"
+  parameter lock_width_rpm::Real(min = eps(Float64)) = 12.0
+  trace = VehicleSystemsComponents.Vehicle.DriveCycle() {^trace}
+  driver = BlockComponents.Continuous.LimPID(with_D = false, k = k, Ti = Ti, y_max = tau_max, y_min = -tau_brake) {^driver}
+  no_ff = BlockComponents.Sources.Constant(k = 0.0) {^no_ff}
+  kmh = VehicleSystemsComponents.Vehicle.ToKmPerHour() {^kmh}
+  powertrain = VehicleSystemsComponents.Vehicle.P2Powertrain(speed_commanded = true, position_start = 0.0, drive(P_aux = 0.0, T_f = 0.0, K_i = 0.0, k_w = 0.0, C = 0.0, J = 0.0)) {^powertrain}
+  differential = MultibodyComponents.PlanarMechanics.DifferentialGear() {^differential}
+  mount = RotationalComponents.Components.Fixed() {^mount}
+  straight = RotationalComponents.Components.Fixed() {^straight}
+  flat = BlockComponents.Sources.Constant(k = 0.0) {^flat}
+  car = VehicleSystemsComponents.Vehicle.Planar.PlanarCar(m = m, radius = radius) {^car}
+  motion = VehicleSystemsComponents.Vehicle.Planar.BusMotion() {^motion}
+  roadload = VehicleSystemsComponents.Vehicle.Planar.PlanarRoadLoad(m = m) {^roadload}
+  meter = VehicleSystemsComponents.Vehicle.SoCCorrectedFuel() {^meter}
+  "Full-pedal requested power [W], mapped engine peak"
+  parameter P_peak::Power = 85000.0
+  "Minimum locked engine speed [rpm]; replaces lower line rows"
+  parameter N_locked::Real = 1000.0
+  "Commanded transmission input speed [rpm], line speed floored at N_locked"
+  variable N_target::Real
+  "Zero for unused command inputs (assumed; fixed-mode fixture)"
+  unused_command = BlockComponents.Sources.Constant(k = 0.0) {^unused_command}
+  line = VehicleSystemsComponents.Vehicle.OperatingLine() {^line}
+relations
+  line.P = powertrain.engine_pedal * P_peak
+  N_target = max(line.N, N_locked)
+  powertrain.N_ref = N_target 
+  connect(car.bus, motion.bus)
+  connect(trace.y, driver.u_s)
+  connect(motion.vx, kmh.u, meter.speed) {^id16}
+  connect(kmh.y, driver.u_m) {^id17}
+  connect(no_ff.y, driver.u_ff) {^id18}
+  connect(powertrain.spline, differential.flange_b) {^id19}
+  connect(differential.flange_left, car.spin_fl) {^id20}
+  connect(differential.flange_right, car.spin_fr) {^id21}
+  connect(powertrain.support, mount.spline) {^id22}
+  connect(car.steering, straight.spline)
+  connect(flat.y, roadload.grade)
+  connect(car.chassis, roadload.chassis) {^id23}
+  connect(powertrain.mdot_fuel, meter.mdot_fuel) {^id24}
+  meter.P_stored = powertrain.E * powertrain.i
+  powertrain.engine_pedal = min(max(driver.y / tau_max, 0.0), 1.0)
+  powertrain.engage = max(0.5 * (1 + tanh((powertrain.engine_speed * 30 / pi - engage_rpm) / engage_width_rpm)), 0.5 * (1 + tanh((powertrain.variator.w_a * 30 / pi - lock_rpm) / lock_width_rpm)))
+  powertrain.tau_ref = 0.0
+  car.tau_fl = -min(driver.y, 0.0) * brake_gain / 2.0
+  car.tau_fr = car.tau_fl
+  car.tau_rl = 0.0
+  car.tau_rr = 0.0
+  initial car.body.r = [0, 0]
+  initial car.body.v = [0, 0]
+  initial car.body.phi = 0.0
+  initial car.body.w = 0.0
+  initial car.fl.inertia.w = dv_wheel / radius
+  initial car.fr.inertia.w = dv_wheel / radius
+  initial car.rl.inertia.w = dv_wheel / radius
+  initial car.rr.inertia.w = dv_wheel / radius
+  initial car.fl.inertia.phi = 0.0
+  initial car.fr.inertia.phi = 0.0
+  initial car.rl.inertia.phi = 0.0
+  initial car.rr.inertia.phi = 0.0
+  initial car.fl.brake.tau_actual = 0.0
+  initial car.fr.brake.tau_actual = 0.0
+  initial car.rl.brake.tau_actual = 0.0
+  initial car.rr.brake.tau_actual = 0.0
+  initial powertrain.drive.converter.i_out = 0.0
+  connect(unused_command.y, powertrain.cvt_pedal) {^id25}
+  connect(unused_command.y, powertrain.engine_torque_ref) {^id26}
+metadata {
+  "_links": {
+    "trace": {"Dyad": {"placement": {"diagram": {"x1": 20, "y1": 140, "x2": 90, "y2": 210}}}},
+    "driver": {
+      "Dyad": {"placement": {"diagram": {"x1": 150, "y1": 150.7, "x2": 240, "y2": 240.7}}}
+    },
+    "no_ff": {"Dyad": {"placement": {"diagram": {"x1": 120, "y1": 30, "x2": 180, "y2": 90}}}},
+    "kmh": {
+      "Dyad": {"placement": {"diagram": {"x1": 30, "y1": 280, "x2": 100, "y2": 350}}}
+    },
+    "powertrain": {
+      "Dyad": {"placement": {"diagram": {"x1": 460, "y1": 80, "x2": 660, "y2": 280}}}
+    },
+    "differential": {
+      "Dyad": {"placement": {"diagram": {"x1": 580, "y1": 640, "x2": 820, "y2": 400}}}
+    },
+    "mount": {
+      "Dyad": {"placement": {"diagram": {"x1": 420, "y1": 320, "x2": 470, "y2": 370}}}
+    },
+    "straight": {
+      "Dyad": {
+        "placement": {"diagram": {"x1": 675, "y1": 660, "x2": 725, "y2": 710, "rot": 180}}
+      }
+    },
+    "flat": {
+      "Dyad": {"placement": {"diagram": {"x1": 400, "y1": 900.0, "x2": 440, "y2": 940.0}}}
+    },
+    "car": {
+      "Dyad": {"placement": {"diagram": {"x1": 610, "y1": 740, "x2": 790, "y2": 920}}}
+    },
+    "motion": {
+      "Dyad": {"placement": {"diagram": {"x1": 850, "y1": 755.0, "x2": 1000, "y2": 905.0}}}
+    },
+    "roadload": {
+      "Dyad": {"placement": {"diagram": {"x1": 480, "y1": 885.0, "x2": 550, "y2": 955.0}}}
+    },
+    "meter": {
+      "Dyad": {"placement": {"diagram": {"x1": 700, "y1": 114.0, "x2": 800, "y2": 214.0}}}
+    },
+    "unused_command": {
+      "Dyad": {"placement": {"diagram": {"x1": 300, "x2": 360, "y1": 76, "y2": 136}}}
+    },
+    "line": {
+      "Dyad": {"placement": {"diagram": {"x1": 270, "x2": 370, "y1": 220, "y2": 320}}}
+    },
+    "id16": {
+      "Dyad": {
+        "edges": [
+          {
+            "S": 1,
+            "M": [
+              {"x": 1015, "y": 794.0},
+              {"x": 1015, "y": 985},
+              {"x": 12, "y": 985},
+              {"x": 12, "y": 315.0}
+            ],
+            "E": 2
+          },
+          {
+            "S": 1,
+            "M": [
+              {"x": 1015, "y": 794.0},
+              {"x": 1015, "y": 300},
+              {"x": 685, "y": 300},
+              {"x": 685, "y": 194.0}
+            ],
+            "E": 3
+          }
+        ],
+        "renderStyle": "standard"
+      }
+    },
+    "id17": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 125, "y": 315.0}, {"x": 125, "y": 216.4}], "E": 2}],
+        "renderStyle": "standard"
+      }
+    },
+    "id18": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 195.0, "y": 60.0}], "E": 2}],
+        "renderStyle": "standard"
+      }
+    },
+    "id19": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 840, "y": 106.0}, {"x": 840, "y": 388.0}], "E": 2}],
+        "renderStyle": "standard"
+      }
+    },
+    "id20": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 555, "y": 520.0}, {"x": 555, "y": 785.0}], "E": 2}],
+        "renderStyle": "standard"
+      }
+    },
+    "id21": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 838, "y": 520.0}, {"x": 838, "y": 785.0}], "E": 2}],
+        "renderStyle": "standard"
+      }
+    },
+    "id22": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 445.0, "y": 280.0}], "E": 2}],
+        "renderStyle": "standard"
+      }
+    },
+    "id23": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "renderStyle": "standard"}},
+    "id24": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "renderStyle": "standard"}},
+    "id25": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 411.5, "y": 106}, {"x": 411.5, "y": 252}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id26": {"Dyad": {"edges": [{"S": 1, "M": [], "E": 2}], "path": {}}}
+  }
+}
+end
+
+"Full WLTC on the step 2 car (derived; VehicleSystemsComponents.Lecture5.P2OperatingLineWLTCTransient)."
+analysis Step2OperatingLineWLTCTransient
+  extends TransientAnalysis(stop = 1800.0, alg = ODEAlg.Rodas5P(), dtmax = 1.0, optimize = OptimizationLevel.None())
+  model = Step2OperatingLineWLTC()
+relations
+end

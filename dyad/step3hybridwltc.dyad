@@ -1,0 +1,387 @@
+"""
+Hands-on 05 step 3: the P2 hybrid, matching VehicleSystemsComponents.Lecture5.P2HybridWLTC. The
+energy manager commands K0, engine start/stop and the machine; the TorqueToPedal block `map`
+turns its engine torque request into a pedal.
+"""
+test component Step3HybridWLTC
+  "Vehicle and road-load mass (assumed; shared planar benchmark)"
+  parameter m::Mass = 1500.0
+  "Wheel radius (derived; planar benchmark)"
+  parameter radius::Length = 0.31
+  "PI gain [N.m per km/h] (assumed; shared WLTC driver)"
+  parameter k::Real = 110.0
+  "PI integral time (assumed; shared Lecture 5 driver)"
+  parameter Ti::Time = 1.0
+  "Signed driver ceiling [N.m]: Engine full-load peak 150.233567 (full_load.csv rounds to 150.234) plus HybridDrive default T_max 205"
+  parameter tau_max::Torque = 150.233567 + 205.0
+  "Negative PI limit including friction demand at the transmission input [N.m]"
+  parameter tau_brake::Torque = tau_max
+  "Initial wheel surface speed offset (assumed; MultibodyComponents #185)"
+  parameter dv_wheel::Velocity = 0.01
+  "Center of K0 launch engagement [rpm] (assumed; step 2)"
+  parameter engage_rpm::Real = 1300.0
+  "Width of K0 launch engagement [rpm] (assumed; step 2)"
+  parameter engage_width_rpm::Real(min = eps(Float64)) = 120.0
+  "Center of machine-side K0 lock-up [rpm] (assumed; step 2)"
+  parameter lock_rpm::Real = 840.0
+  "Width of machine-side K0 lock-up [rpm] (assumed; step 2)"
+  parameter lock_width_rpm::Real(min = eps(Float64)) = 12.0
+  "Minimum transmission input target [rpm] (assumed; step 2)"
+  parameter N_locked::Real = 1000.0
+  trace = VehicleSystemsComponents.Vehicle.DriveCycle() {^trace}
+  driver = BlockComponents.Continuous.LimPID(with_D = false, k = k, Ti = Ti, y_max = tau_max, y_min = -tau_brake) {^driver}
+  no_ff = BlockComponents.Sources.Constant(k = 0.0) {^no_ff}
+  kmh = VehicleSystemsComponents.Vehicle.ToKmPerHour() {^kmh}
+  powertrain = VehicleSystemsComponents.Vehicle.P2Powertrain(speed_commanded = true, start_stop = true, position_start = 0.0, engine_speed_start = 0.0) {^powertrain}
+  manager = VehicleSystemsComponents.Vehicle.EnergyManager(mapped_limits = true, SoC_on = 0.52, SoC_off = 0.55, P_line_max = 30.0e3) {^manager}
+  line = VehicleSystemsComponents.Vehicle.OperatingLine() {^line}
+  demand_line = VehicleSystemsComponents.Vehicle.OperatingLine() {^demand_line}
+  differential = MultibodyComponents.PlanarMechanics.DifferentialGear() {^differential}
+  mount = RotationalComponents.Components.Fixed() {^mount}
+  straight = RotationalComponents.Components.Fixed() {^straight}
+  flat = BlockComponents.Sources.Constant(k = 0.0) {^flat}
+  car = VehicleSystemsComponents.Vehicle.Planar.PlanarCar(m = m, radius = radius) {^car}
+  motion = VehicleSystemsComponents.Vehicle.Planar.BusMotion() {^motion}
+  roadload = VehicleSystemsComponents.Vehicle.Planar.PlanarRoadLoad(m = m) {^roadload}
+  meter = VehicleSystemsComponents.Vehicle.SoCCorrectedFuel() {^meter}
+  "CVT target blended from demand in electric mode to engine request when running [rpm]"
+  variable N_target::Real
+  "Stored-energy charging integral [J]; includes regen and engine-driven charging"
+  variable E_charge::Energy
+  "Requested regenerative braking energy at the machine shaft [J], excludes load-point charging"
+  variable E_regen::Energy
+  "Actual wheel friction-brake dissipation [J]"
+  variable E_friction::Energy
+  "Zero for unused command inputs (assumed; fixed-mode fixture)"
+  unused_command = BlockComponents.Sources.Constant(k = 0.0) {^unused_command}
+  map = VehicleSystemsComponents.Vehicle.TorqueToPedal() {^map}
+relations
+  connect(unused_command.y, powertrain.cvt_pedal) {^id19}
+  connect(car.bus, motion.bus)
+  connect(trace.y, driver.u_s)
+  connect(motion.vx, kmh.u, meter.speed) {^id20}
+  connect(kmh.y, driver.u_m, manager.v) {^id21}
+  connect(no_ff.y, driver.u_ff) {^id22}
+  connect(driver.y, manager.tau_dem) {^id23}
+  manager.w_shaft = powertrain.variator.w_a
+  connect(powertrain.SoC, manager.SoC) {^id24}
+  connect(powertrain.engine_speed, manager.engine_speed) {^id25}
+  connect(powertrain.available_torque, manager.available_torque) {^id26}
+  demand_line.P = manager.P_drive
+  N_target = max(manager.engine_on * line.N + (1.0 - manager.engine_on) * demand_line.N, N_locked)
+  powertrain.N_ref = N_target
+  powertrain.engage = manager.engage * max(0.5 * (1 + tanh((powertrain.engine_speed * 30 / pi - engage_rpm) / engage_width_rpm)), 0.5 * (1 + tanh((powertrain.variator.w_a * 30 / pi - lock_rpm) / lock_width_rpm)))
+  connect(powertrain.spline, differential.flange_b) {^id27}
+  connect(differential.flange_left, car.spin_fl) {^id28}
+  connect(differential.flange_right, car.spin_fr) {^id29}
+  connect(powertrain.support, mount.spline) {^id30}
+  connect(car.steering, straight.spline)
+  connect(flat.y, roadload.grade)
+  connect(car.chassis, roadload.chassis) {^id31}
+  connect(powertrain.mdot_fuel, meter.mdot_fuel) {^id32}
+  meter.P_stored = powertrain.E * powertrain.i
+  car.tau_fl = manager.tau_friction * powertrain.variator.ratio / 2.0
+  car.tau_fr = car.tau_fl
+  car.tau_rl = 0.0
+  car.tau_rr = 0.0
+  der(E_charge) = max(-meter.P_stored, 0.0)
+  der(E_regen) = manager.tau_regen * max(manager.w_shaft, 0.0)
+  der(E_friction) = car.fl.brake.tau_friction * car.fl.brake.w + car.fr.brake.tau_friction * car.fr.brake.w + car.rl.brake.tau_friction * car.rl.brake.w + car.rr.brake.tau_friction * car.rr.brake.w
+  initial E_charge = 0.0
+  initial E_regen = 0.0
+  initial E_friction = 0.0
+  initial car.body.r = [0, 0]
+  initial car.body.v = [0, 0]
+  initial car.body.phi = 0.0
+  initial car.body.w = 0.0
+  initial car.fl.inertia.w = dv_wheel / radius
+  initial car.fr.inertia.w = dv_wheel / radius
+  initial car.rl.inertia.w = dv_wheel / radius
+  initial car.rr.inertia.w = dv_wheel / radius
+  initial car.fl.inertia.phi = 0.0
+  initial car.fr.inertia.phi = 0.0
+  initial car.rl.inertia.phi = 0.0
+  initial car.rr.inertia.phi = 0.0
+  initial car.fl.brake.tau_actual = 0.0
+  initial car.fr.brake.tau_actual = 0.0
+  initial car.rl.brake.tau_actual = 0.0
+  initial car.rr.brake.tau_actual = 0.0
+  initial powertrain.drive.converter.i_out = 0.0
+  connect(manager.P_engine, line.P) {^id33}
+  connect(manager.engine_on, powertrain.engine_on) {^id34}
+  connect(manager.tau_machine, powertrain.tau_ref) {^id35}
+  connect(manager.tau_engine, powertrain.engine_torque_ref) {^id36}
+  connect(manager.tau_engine, map.tau) {^id37}
+  connect(powertrain.engine_speed, map.omega) {^id38}
+  connect(map.pedal, powertrain.engine_pedal) {^id39}
+metadata {
+  "_links": {
+    "trace": {"Dyad": {"placement": {"diagram": {"x1": 0, "y1": 140, "x2": 70, "y2": 210}}}},
+    "driver": {
+      "Dyad": {"placement": {"diagram": {"x1": 130, "y1": 150.7, "x2": 220, "y2": 240.7}}}
+    },
+    "no_ff": {"Dyad": {"placement": {"diagram": {"x1": 100, "y1": 30, "x2": 160, "y2": 90}}}},
+    "kmh": {"Dyad": {"placement": {"diagram": {"x1": 10, "y1": 245, "x2": 80, "y2": 315}}}},
+    "powertrain": {
+      "Dyad": {"placement": {"diagram": {"x1": 680, "y1": 121.6, "x2": 880, "y2": 321.6}}}
+    },
+    "manager": {
+      "Dyad": {"placement": {"diagram": {"x1": 270, "y1": 120, "x2": 530, "y2": 380}}}
+    },
+    "line": {"Dyad": {"placement": {"diagram": {"x1": 550, "y1": 40, "x2": 595, "y2": 85}}}},
+    "demand_line": {"Dyad": {"placement": {"diagram": {"x1": 650, "y1": 40, "x2": 695, "y2": 85}}}},
+    "differential": {
+      "Dyad": {"placement": {"diagram": {"x1": 640, "y1": 740, "x2": 880, "y2": 500}}}
+    },
+    "mount": {
+      "Dyad": {"placement": {"diagram": {"x1": 675, "y1": 355, "x2": 725, "y2": 405}}}
+    },
+    "straight": {
+      "Dyad": {
+        "placement": {"diagram": {"x1": 735, "y1": 745, "x2": 785, "y2": 795, "rot": 180}}
+      }
+    },
+    "flat": {
+      "Dyad": {"placement": {"diagram": {"x1": 480, "y1": 880, "x2": 520, "y2": 920}}}
+    },
+    "car": {
+      "Dyad": {"placement": {"diagram": {"x1": 690, "y1": 800, "x2": 830, "y2": 940}}}
+    },
+    "motion": {
+      "Dyad": {"placement": {"diagram": {"x1": 880, "y1": 810, "x2": 1000, "y2": 930}}}
+    },
+    "roadload": {
+      "Dyad": {"placement": {"diagram": {"x1": 560, "y1": 865, "x2": 630, "y2": 935}}}
+    },
+    "meter": {
+      "Dyad": {"placement": {"diagram": {"x1": 930, "y1": 16, "x2": 1000, "y2": 86}}}
+    },
+    "unused_command": {
+      "Dyad": {"placement": {"diagram": {"x1": 580, "x2": 620, "y1": 345, "y2": 385}}}
+    },
+    "map": {
+      "Dyad": {"placement": {"diagram": {"x1": 340, "x2": 440, "y1": 530, "y2": 630}}}
+    },
+    "id19": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 674, "y": 365}, {"x": 674, "y": 293.6}], "E": 2}],
+        "renderStyle": "standard"
+      }
+    },
+    "id20": {
+      "Dyad": {
+        "edges": [
+          {
+            "S": 1,
+            "M": [
+              {"x": 1015, "y": 841.2},
+              {"x": 1015, "y": 990},
+              {"x": -5, "y": 990},
+              {"x": -5, "y": 280.0}
+            ],
+            "E": 2
+          },
+          {
+            "S": 1,
+            "M": [
+              {"x": 1015, "y": 841.2},
+              {"x": 1015, "y": 110},
+              {"x": 920, "y": 110},
+              {"x": 920, "y": 72.0}
+            ],
+            "E": 3
+          }
+        ],
+        "renderStyle": "standard"
+      }
+    },
+    "id21": {
+      "Dyad": {
+        "edges": [
+          {"S": 1, "M": [{"x": 105, "y": 280.0}, {"x": 105, "y": 216.4}], "E": 2},
+          {"S": 1, "M": [{"x": 252, "y": 280.0}, {"x": 252, "y": 250.0}], "E": 3}
+        ],
+        "renderStyle": "standard"
+      }
+    },
+    "id22": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 175.0, "y": 60.0}], "E": 2}],
+        "renderStyle": "standard"
+      }
+    },
+    "id23": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 240, "y": 195.7}, {"x": 240, "y": 159.0}], "E": 2}],
+        "renderStyle": "standard"
+      }
+    },
+    "id24": {
+      "Dyad": {
+        "edges": [
+          {
+            "S": 1,
+            "M": [
+              {"x": 945, "y": 203.6},
+              {"x": 945, "y": 436},
+              {"x": 236, "y": 436},
+              {"x": 236, "y": 341.0}
+            ],
+            "E": 2
+          }
+        ],
+        "renderStyle": "standard"
+      }
+    },
+    "id25": {
+      "Dyad": {
+        "edges": [
+          {
+            "S": 1,
+            "M": [
+              {"x": 960, "y": 189.6},
+              {"x": 960, "y": 444},
+              {"x": 224, "y": 444},
+              {"x": 224, "y": 295.5}
+            ],
+            "E": 2
+          }
+        ],
+        "renderStyle": "standard"
+      }
+    },
+    "id26": {
+      "Dyad": {
+        "edges": [
+          {
+            "S": 1,
+            "M": [{"x": 930, "y": 217.6}, {"x": 930, "y": 428}, {"x": 322.0, "y": 428}],
+            "E": 2
+          }
+        ],
+        "renderStyle": "standard"
+      }
+    },
+    "id27": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 975, "y": 147.6}, {"x": 975, "y": 488.0}], "E": 2}],
+        "renderStyle": "standard"
+      }
+    },
+    "id28": {
+      "Dyad": {
+        "edges": [
+          {
+            "S": 1,
+            "M": [
+              {"x": 615, "y": 620.0},
+              {"x": 615, "y": 770},
+              {"x": 655, "y": 770},
+              {"x": 655, "y": 835.0}
+            ],
+            "E": 2
+          }
+        ],
+        "renderStyle": "standard"
+      }
+    },
+    "id29": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 860, "y": 620.0}, {"x": 860, "y": 835.0}], "E": 2}],
+        "renderStyle": "standard"
+      }
+    },
+    "id30": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 700.0, "y": 321.6}], "E": 2}],
+        "renderStyle": "standard"
+      }
+    },
+    "id31": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 645, "y": 940.0}, {"x": 645, "y": 900.0}], "E": 2}],
+        "renderStyle": "standard"
+      }
+    },
+    "id32": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 893, "y": 175.6}, {"x": 893, "y": 30.0}], "E": 2}],
+        "renderStyle": "standard"
+      }
+    },
+    "id33": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 540, "y": 146}, {"x": 540, "y": 62.5}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id34": {
+      "Dyad": {
+        "edges": [
+          {
+            "S": 1,
+            "M": [{"x": 605, "y": 229.2}, {"x": 605, "y": 229.20000000000002}],
+            "E": 2
+          }
+        ],
+        "path": {}
+      }
+    },
+    "id35": {
+      "Dyad": {
+        "edges": [
+          {
+            "S": 1,
+            "M": [{"x": 605, "y": 312.4}, {"x": 605, "y": 253.60000000000002}],
+            "E": 2
+          }
+        ],
+        "path": {}
+      }
+    },
+    "id36": {
+      "Dyad": {
+        "edges": [
+          {
+            "S": 1,
+            "M": [{"x": 605, "y": 187.6}, {"x": 605, "y": 147.60000000000002}],
+            "E": 2
+          }
+        ],
+        "path": {}
+      }
+    },
+    "id37": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 435, "y": 187.6}, {"x": 435, "y": 600}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id38": {
+      "Dyad": {
+        "edges": [{"S": 1, "M": [{"x": 390, "y": 189.60000000000002}], "E": 2}],
+        "path": {}
+      }
+    },
+    "id39": {
+      "Dyad": {
+        "edges": [
+          {
+            "S": 1,
+            "M": [{"x": 560, "y": 580}, {"x": 560, "y": 207.20000000000002}],
+            "E": 2
+          }
+        ],
+        "path": {}
+      }
+    }
+  }
+}
+end
+
+"Full WLTC hybrid run on the step 3 car (derived; VehicleSystemsComponents.Lecture5.P2HybridWLTCTransient)."
+analysis Step3HybridWLTCTransient
+  extends TransientAnalysis(stop = 1800.0, alg = ODEAlg.Rodas5P(), dtmax = 1.0, optimize = OptimizationLevel.None())
+  model = Step3HybridWLTC()
+relations
+end
