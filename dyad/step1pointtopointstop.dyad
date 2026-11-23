@@ -1,0 +1,10 @@
+test component Step1PointToPointStop
+  extends VehicleSystemsComponents.HandsOn06.WiringStop(ideal = true)
+relations
+end
+
+analysis Step1PointToPointStopTransient
+  extends TransientAnalysis(stop = 6, alg = ODEAlg.Rodas5P(), dtmax = 0.005, tstops = [0.5, 0.6], optimize = OptimizationLevel.None(), abstol = 1e-9, reltol = 1e-9)
+  model = Step1PointToPointStop()
+relations
+end

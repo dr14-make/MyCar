@@ -1,0 +1,10 @@
+test component Step2DuplicateSlotStop
+  extends VehicleSystemsComponents.HandsOn06.WiringStop(networked = true, ideal = false)
+relations
+end
+
+analysis Step2DuplicateSlotStopTransient
+  extends TransientAnalysis(stop = 6, dtmax = 0.005, reltol = 1e-7, optimize = OptimizationLevel.None())
+  model = Step2DuplicateSlotStop()
+relations
+end

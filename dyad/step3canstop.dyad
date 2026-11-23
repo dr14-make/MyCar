@@ -1,0 +1,10 @@
+test component Step3CanStop
+  extends VehicleSystemsComponents.HandsOn06.WiringStop(networked = true, ideal = false, chassis_period = 0.04)
+relations
+end
+
+analysis Step3CanStopTransient
+  extends TransientAnalysis(stop = 6, alg = ODEAlg.Rodas5P(), dtmax = 0.005, tstops = [0.5, 0.6], optimize = OptimizationLevel.None(), abstol = 1e-9, reltol = 1e-9)
+  model = Step3CanStop()
+relations
+end
